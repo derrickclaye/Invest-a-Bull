@@ -18,7 +18,7 @@ The refreshed project combines:
 
 Most recent successful automated run:
 
-- **Generated:** 2026-05-04 05:19:37 UTC
+- **Generated:** 2026-05-04 05:36:00 UTC
 - **Latest market data used:** 2026-05-01
 - **Selection source:** `yfinance_screeners`
 - **Top 5 trending stocks:** `MU, AMD, AAOI, NVDA, INTC`
@@ -30,13 +30,13 @@ Most recent successful automated run:
 
 ### Current top-5 snapshot
 
-| Rank | Ticker | Company | Trend Score | 1M Return | 3M Return |
-| --- | --- | --- | --- | --- | --- |
-| 1 | MU | Micron Technology, Inc. | 0.590 | 47.40% | 30.75% |
-| 2 | AMD | Advanced Micro Devices, Inc. | 0.569 | 71.51% | 52.30% |
-| 3 | AAOI | Applied Optoelectronics, Inc. | 0.556 | 112.52% | 320.80% |
-| 4 | NVDA | NVIDIA Corporation | 0.519 | 12.92% | 3.84% |
-| 5 | INTC | Intel Corporation | 0.502 | 107.41% | 114.37% |
+| Rank | Ticker | Company                       | Trend Score | 1M Return | 3M Return |
+|------|--------|-------------------------------|-------------|-----------|-----------|
+| 1    | MU     | Micron Technology, Inc.       | 0.590       | 47.40%    | 30.75%    |
+| 2    | AMD    | Advanced Micro Devices, Inc.  | 0.569       | 71.51%    | 52.30%    |
+| 3    | AAOI   | Applied Optoelectronics, Inc. | 0.556       | 112.52%   | 320.80%   |
+| 4    | NVDA   | NVIDIA Corporation            | 0.519       | 12.92%    | 3.84%     |
+| 5    | INTC   | Intel Corporation             | 0.502       | 107.41%   | 114.37%   |
 
 See the generated deliverables:
 
@@ -119,12 +119,13 @@ python .\run_latest_top5_analysis.py --skip-readme
 
 The repository includes `.github/workflows/daily-analysis.yml`, which:
 
-1. runs on a daily schedule and on manual dispatch
-2. installs project dependencies
-3. refreshes the live market analysis
-4. executes `MasterAnalysisFinal.ipynb`
-5. updates `reports/`, `data/processed/`, and the README latest-results section
-6. commits and pushes changed generated artifacts back to the repository
+1. runs unit tests on every push
+2. runs the full live refresh on a daily schedule and on manual dispatch
+3. installs project dependencies
+4. refreshes the live market analysis
+5. executes `MasterAnalysisFinal.ipynb`
+6. updates `reports/`, `data/processed/`, and the README latest-results section
+7. commits and pushes changed generated artifacts back to the repository for scheduled/manual refreshes
 
 ## Run tests
 

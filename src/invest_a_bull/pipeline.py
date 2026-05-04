@@ -3,6 +3,7 @@ from __future__ import annotations
 import sys
 from dataclasses import asdict
 from datetime import datetime, timezone
+from itertools import combinations
 from pathlib import Path
 
 import pandas as pd
@@ -24,6 +25,57 @@ def ensure_directories(config: AnalysisConfig) -> None:
     config.data_dir.mkdir(parents=True, exist_ok=True)
     config.reports_dir.mkdir(parents=True, exist_ok=True)
     config.figures_dir.mkdir(parents=True, exist_ok=True)
+
+
+def _shared_history(candidate_prices: pd.DataFrame, symbols: list[str]) -> pd.DataFrame:
+    return candidate_prices[symbols].dropna(how="any")
+
+
+def _select_top_candidates_with_shared_history(
+    metrics: pd.DataFrame,
+    candidate_prices: pd.DataFrame,
+    *,
+    top_n: int,
+    min_shared_rows: int = 2,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    if len(metrics) < top_n:
+        raise ValueError(f"At least {top_n} ranked candidates are required to build the top selection.")
+
+    ranked_metrics = rank_trending_stocks(metrics, top_n=len(metrics))
+    search_pool_sizes = sorted({min(len(ranked_metrics), pool_size) for pool_size in (top_n, 12, 20, len(ranked_metrics))})
+
+    best_symbols: tuple[str, ...] | None = None
+    best_shared_history: pd.DataFrame | None = None
+    best_score: tuple[int, float, int] | None = None
+
+    for pool_size in search_pool_sizes:
+        pool = ranked_metrics.head(pool_size)
+        for symbol_group in combinations(pool["symbol"].tolist(), top_n):
+            shared_history = _shared_history(candidate_prices, list(symbol_group))
+            shared_rows = len(shared_history)
+            if shared_rows < min_shared_rows:
+                continue
+
+            candidate_selection = pool[pool["symbol"].isin(symbol_group)].copy()
+            score = (
+                shared_rows,
+                float(candidate_selection["trend_score"].sum()),
+                -int(candidate_selection["rank"].sum()),
+            )
+            if best_score is None or score > best_score:
+                best_symbols = symbol_group
+                best_shared_history = shared_history
+                best_score = score
+
+    if best_symbols is not None and best_shared_history is not None:
+        selected = ranked_metrics[ranked_metrics["symbol"].isin(best_symbols)].sort_values("rank").reset_index(drop=True)
+        selected = selected.copy()
+        selected["rank"] = range(1, len(selected) + 1)
+        return selected, best_shared_history
+
+    raise ValueError(
+        f"Unable to identify {top_n} tickers with at least {min_shared_rows} shared price rows for portfolio analytics."
+    )
 
 
 def run_pipeline(config: AnalysisConfig | None = None) -> dict[str, Path]:
@@ -56,9 +108,13 @@ def run_pipeline(config: AnalysisConfig | None = None) -> dict[str, Path]:
     if eligible_metrics.empty:
         raise ValueError("No eligible securities remained after applying history checks.")
 
-    top_selection = rank_trending_stocks(eligible_metrics, top_n=resolved_config.top_n)
+    top_selection, top_prices = _select_top_candidates_with_shared_history(
+        eligible_metrics,
+        candidate_prices,
+        top_n=resolved_config.top_n,
+        min_shared_rows=2,
+    )
     top_symbols = top_selection["symbol"].tolist()
-    top_prices = candidate_prices[top_symbols].dropna(how="any")
 
     selected_history = pd.DataFrame(
         [

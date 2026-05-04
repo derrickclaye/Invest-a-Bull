@@ -1,6 +1,6 @@
 # Data Quality Report
 
-Generated: 2026-05-04 05:19:37 UTC
+Generated: 2026-05-04 05:36:00 UTC
 
 - Latest market data used: **2026-05-01**
 - Candidate universe count: **40**

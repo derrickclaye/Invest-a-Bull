@@ -3,6 +3,7 @@ from __future__ import annotations
 import sys
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
@@ -13,6 +14,9 @@ if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
 from invest_a_bull.analytics import compute_security_metrics, portfolio_summary, rank_trending_stocks, trailing_return
+from invest_a_bull.config import AnalysisConfig
+from invest_a_bull.market_data import fetch_screener_candidates
+from invest_a_bull.pipeline import _select_top_candidates_with_shared_history
 from invest_a_bull.simulation import simulate_portfolio_paths, summarize_simulation
 
 
@@ -102,6 +106,74 @@ class AnalyticsTests(unittest.TestCase):
         summary = portfolio_summary(price_history, benchmark, risk_free_rate=0.0)
         benchmark_return = float(summary.loc[summary["metric"] == "SPY total return (lookback)", "value"].iloc[0])
         self.assertAlmostEqual(benchmark_return, 0.32)
+
+    def test_fetch_screener_candidates_reports_partial_failures(self) -> None:
+        config = AnalysisConfig(
+            screener_queries=("most_actives", "day_gainers"),
+            screener_count=1,
+            min_price=1.0,
+            min_market_cap=1,
+        )
+        success_payload = {
+            "quotes": [
+                {
+                    "symbol": "AAA",
+                    "longName": "Alpha Inc.",
+                    "quoteType": "EQUITY",
+                    "exchange": "NMS",
+                    "regularMarketPrice": 10.0,
+                    "regularMarketChangePercent": 1.5,
+                    "marketCap": 10_000_000,
+                    "averageDailyVolume3Month": 1_000_000,
+                }
+            ]
+        }
+
+        with patch("invest_a_bull.market_data.yf.screen", side_effect=[success_payload, RuntimeError("screen unavailable")]):
+            frame, selection_source = fetch_screener_candidates(config)
+
+        self.assertEqual(frame["symbol"].tolist(), ["AAA"])
+        self.assertIn("yfinance_screeners_partial", selection_source)
+        self.assertIn("day_gainers", selection_source)
+
+    def test_select_top_candidates_with_shared_history_avoids_empty_overlap(self) -> None:
+        metrics = pd.DataFrame(
+            {
+                "symbol": ["AAA", "BBB", "CCC", "DDD", "EEE"],
+                "name": ["A", "B", "C", "D", "E"],
+                "screens": ["s1", "s1", "s1", "s2", "s2"],
+                "screen_hits": [2, 2, 2, 1, 1],
+                "day_change_pct": [0.03, 0.025, 0.02, 0.15, 0.14],
+                "return_5d": [0.04, 0.035, 0.03, 0.25, 0.24],
+                "return_21d": [0.08, 0.075, 0.07, 0.40, 0.39],
+                "return_63d": [0.12, 0.11, 0.10, 0.60, 0.59],
+                "avg_volume_3m": [5_000_000, 4_500_000, 4_000_000, 3_000_000, 2_500_000],
+                "latest_close": [100.0, 95.0, 90.0, 15.0, 14.0],
+                "market_cap": [500_000_000_000, 400_000_000_000, 300_000_000_000, 20_000_000_000, 18_000_000_000],
+                "dollar_volume": [500_000_000, 427_500_000, 360_000_000, 45_000_000, 35_000_000],
+                "history_rows": [10, 10, 10, 2, 2],
+            }
+        )
+        candidate_prices = pd.DataFrame(
+            {
+                "AAA": [100, 101, 102, 103, 104, 105],
+                "BBB": [90, 91, 92, 93, 94, 95],
+                "CCC": [80, 81, 82, 83, 84, 85],
+                "DDD": [np.nan, np.nan, np.nan, np.nan, 15, 16],
+                "EEE": [np.nan, np.nan, np.nan, np.nan, 14, 15],
+            },
+            index=pd.date_range("2025-01-01", periods=6, freq="B"),
+        )
+
+        top_selection, top_prices = _select_top_candidates_with_shared_history(
+            metrics,
+            candidate_prices,
+            top_n=3,
+            min_shared_rows=2,
+        )
+
+        self.assertEqual(top_selection["symbol"].tolist(), ["AAA", "BBB", "CCC"])
+        self.assertGreaterEqual(len(top_prices), 2)
 
 
 if __name__ == "__main__":

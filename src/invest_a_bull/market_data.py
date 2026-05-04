@@ -82,6 +82,9 @@ def fetch_screener_candidates(config: AnalysisConfig) -> tuple[pd.DataFrame, str
             reason = f"fallback_momentum_universe ({'; '.join(f'{k}: {v}' for k, v in failures.items())})"
         return fallback, reason
 
+    if failures:
+        return frame, f"yfinance_screeners_partial ({'; '.join(f'{k}: {v}' for k, v in failures.items())})"
+
     return frame, "yfinance_screeners"
 
 
@@ -142,5 +145,6 @@ def download_adjusted_close(tickers: Iterable[str], period: str) -> pd.DataFrame
 
 def download_benchmark_close(ticker: str, period: str) -> pd.Series:
     return download_adjusted_close([ticker], period=period).iloc[:, 0].dropna()
+
 
 
