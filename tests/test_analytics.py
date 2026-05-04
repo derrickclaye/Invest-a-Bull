@@ -12,7 +12,7 @@ SRC_DIR = PROJECT_ROOT / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
-from invest_a_bull.analytics import compute_security_metrics, rank_trending_stocks, trailing_return
+from invest_a_bull.analytics import compute_security_metrics, portfolio_summary, rank_trending_stocks, trailing_return
 from invest_a_bull.simulation import simulate_portfolio_paths, summarize_simulation
 
 
@@ -84,6 +84,24 @@ class AnalyticsTests(unittest.TestCase):
         summary = summarize_simulation(paths)
         self.assertIn("95% CI Lower", summary.index)
         self.assertIn("95% CI Upper", summary.index)
+
+    def test_portfolio_summary_aligns_benchmark_to_portfolio_window(self) -> None:
+        price_history = pd.DataFrame(
+            {
+                "AAA": [100.0, 110.0, 121.0],
+                "BBB": [50.0, 55.0, 60.5],
+            },
+            index=pd.date_range("2025-01-03", periods=3, freq="B"),
+        )
+        benchmark = pd.Series(
+            [90.0, 100.0, 120.0, 132.0],
+            index=pd.date_range("2025-01-02", periods=4, freq="B"),
+            name="SPY",
+        )
+
+        summary = portfolio_summary(price_history, benchmark, risk_free_rate=0.0)
+        benchmark_return = float(summary.loc[summary["metric"] == "SPY total return (lookback)", "value"].iloc[0])
+        self.assertAlmostEqual(benchmark_return, 0.32)
 
 
 if __name__ == "__main__":

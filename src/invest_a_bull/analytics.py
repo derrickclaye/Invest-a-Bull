@@ -103,8 +103,12 @@ def portfolio_summary(price_history: pd.DataFrame, benchmark: pd.Series, risk_fr
     sharpe = float((annual_return - risk_free_rate) / annual_volatility) if annual_volatility else float("nan")
     total_return = float(cumulative.iloc[-1] - 1)
 
-    benchmark_returns = benchmark.pct_change().dropna()
-    benchmark_total_return = float((1 + benchmark_returns).cumprod().iloc[-1] - 1)
+    benchmark_window = benchmark.reindex(price_history.index).dropna()
+    if len(benchmark_window) > 1:
+        benchmark_returns = benchmark_window.pct_change().dropna()
+        benchmark_total_return = float((1 + benchmark_returns).cumprod().iloc[-1] - 1)
+    else:
+        benchmark_total_return = float("nan")
 
     return pd.DataFrame(
         [

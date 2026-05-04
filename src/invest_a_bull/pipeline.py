@@ -108,6 +108,15 @@ def run_pipeline(config: AnalysisConfig | None = None) -> dict[str, Path]:
     portfolio_table.to_csv(portfolio_path, index=False)
     simulation_summary.rename("value").to_csv(simulation_path, header=True)
 
+    config_metadata = {}
+    for key, value in asdict(resolved_config).items():
+        if key == "project_root":
+            config_metadata[key] = "."
+        elif isinstance(value, Path):
+            config_metadata[key] = str(value)
+        else:
+            config_metadata[key] = value
+
     metadata = {
         "generated_at_utc": generated_at.isoformat(),
         "data_as_of": data_as_of,
@@ -116,7 +125,7 @@ def run_pipeline(config: AnalysisConfig | None = None) -> dict[str, Path]:
         "eligible_count": int(len(metrics.loc[sufficient_history])),
         "excluded_for_history": excluded_for_history,
         "selected_tickers": top_symbols,
-        "config": {key: str(value) if isinstance(value, Path) else value for key, value in asdict(resolved_config).items()},
+        "config": config_metadata,
     }
     write_json(metadata, metadata_path)
 

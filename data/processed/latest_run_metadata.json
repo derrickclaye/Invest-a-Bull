@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-05-04T05:01:23.432603+00:00",
+  "generated_at_utc": "2026-05-04T05:19:37.261840+00:00",
   "data_as_of": "2026-05-01",
   "selection_source": "yfinance_screeners",
   "candidate_count": 40,
@@ -13,7 +13,7 @@
     "INTC"
   ],
   "config": {
-    "project_root": "C:\\Users\\big_j\\PycharmProjects\\Invest-a-Bull",
+    "project_root": ".",
     "top_n": 5,
     "screener_queries": [
       "most_actives",
