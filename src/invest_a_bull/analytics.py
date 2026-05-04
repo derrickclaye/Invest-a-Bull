@@ -46,20 +46,28 @@ def compute_security_metrics(candidates: pd.DataFrame, price_history: pd.DataFra
 
     for ticker in available:
         prices = price_history[ticker].dropna()
+        if len(prices) < 2:
+            continue
         daily_returns = prices.pct_change().dropna()
         metrics_rows.append(
             {
                 "symbol": ticker,
+                "history_rows": int(len(prices)),
+                "history_start": prices.index.min().date().isoformat(),
+                "history_end": prices.index.max().date().isoformat(),
                 "latest_close": float(prices.iloc[-1]),
                 "return_5d": trailing_return(prices, 5),
                 "return_21d": trailing_return(prices, 21),
                 "return_63d": trailing_return(prices, 63),
                 "ann_volatility": float(daily_returns.std() * np.sqrt(252)) if not daily_returns.empty else float("nan"),
-                "max_drawdown": max_drawdown(prices) if not prices.empty else float("nan"),
+                "max_drawdown": max_drawdown(prices),
             }
         )
 
     metrics = pd.DataFrame(metrics_rows)
+    if metrics.empty:
+        raise ValueError("Downloaded price history did not contain enough observations for any candidate ticker.")
+
     combined = aligned_candidates.merge(metrics, on="symbol", how="inner")
     combined["dollar_volume"] = combined["latest_close"] * combined["avg_volume_3m"].fillna(0)
     return combined
@@ -112,5 +120,3 @@ def portfolio_summary(price_history: pd.DataFrame, benchmark: pd.Series, risk_fr
 
 def correlation_matrix(price_history: pd.DataFrame) -> pd.DataFrame:
     return price_history.pct_change().dropna(how="all").corr()
-
-

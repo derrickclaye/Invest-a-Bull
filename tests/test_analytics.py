@@ -12,7 +12,7 @@ SRC_DIR = PROJECT_ROOT / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
-from invest_a_bull.analytics import rank_trending_stocks, trailing_return
+from invest_a_bull.analytics import compute_security_metrics, rank_trending_stocks, trailing_return
 from invest_a_bull.simulation import simulate_portfolio_paths, summarize_simulation
 
 
@@ -42,6 +42,33 @@ class AnalyticsTests(unittest.TestCase):
         self.assertEqual(ranked["symbol"].tolist(), ["BBB", "AAA"])
         self.assertEqual(ranked["rank"].tolist(), [1, 2])
 
+    def test_compute_security_metrics_tracks_history_depth(self) -> None:
+        candidates = pd.DataFrame(
+            {
+                "symbol": ["AAA", "BBB"],
+                "name": ["A", "B"],
+                "screen_hits": [1, 1],
+                "screens": ["s1", "s2"],
+                "price": [10.0, 20.0],
+                "day_change_pct": [0.01, 0.02],
+                "market_cap": [10_000_000_000, 20_000_000_000],
+                "avg_volume_3m": [1_000_000, 2_000_000],
+            }
+        )
+        price_history = pd.DataFrame(
+            {
+                "AAA": [10, 10.5, 11, 11.5, 12],
+                "BBB": [20, 20.2, 20.4, 20.6, 20.8],
+            },
+            index=pd.date_range("2025-01-01", periods=5, freq="B"),
+        )
+
+        metrics = compute_security_metrics(candidates, price_history)
+        self.assertIn("history_rows", metrics.columns)
+        self.assertTrue((metrics["history_rows"] == 5).all())
+        self.assertIn("history_start", metrics.columns)
+        self.assertIn("history_end", metrics.columns)
+
     def test_simulation_outputs_expected_shape_and_summary(self) -> None:
         prices = pd.DataFrame(
             {
@@ -53,6 +80,7 @@ class AnalyticsTests(unittest.TestCase):
         )
         paths = simulate_portfolio_paths(prices, num_simulations=25, num_trading_days=10, random_seed=42)
         self.assertEqual(paths.shape, (11, 25))
+        self.assertTrue((paths.iloc[0] == 1).all())
         summary = summarize_simulation(paths)
         self.assertIn("95% CI Lower", summary.index)
         self.assertIn("95% CI Upper", summary.index)

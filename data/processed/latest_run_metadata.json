@@ -1,14 +1,16 @@
 {
-  "generated_at_utc": "2026-04-16T04:57:28.657524+00:00",
-  "data_as_of": "2026-04-15",
+  "generated_at_utc": "2026-05-04T05:01:23.432603+00:00",
+  "data_as_of": "2026-05-01",
   "selection_source": "yfinance_screeners",
-  "candidate_count": 30,
+  "candidate_count": 40,
+  "eligible_count": 38,
+  "excluded_for_history": 2,
   "selected_tickers": [
-    "IONQ",
+    "MU",
+    "AMD",
+    "AAOI",
     "NVDA",
-    "HOOD",
-    "CRDO",
-    "CRWV"
+    "INTC"
   ],
   "config": {
     "project_root": "C:\\Users\\big_j\\PycharmProjects\\Invest-a-Bull",
@@ -23,6 +25,7 @@
     "benchmark_ticker": "SPY",
     "min_price": 5.0,
     "min_market_cap": 10000000000,
+    "min_history_days": 63,
     "allowed_exchanges": [
       "NMS",
       "NYQ",
@@ -51,6 +54,7 @@
     "risk_free_rate": 0.04,
     "monte_carlo_simulations": 250,
     "monte_carlo_days": 252,
-    "random_seed": 42
+    "random_seed": 42,
+    "notebook_timeout_seconds": 1800
   }
 }

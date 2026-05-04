@@ -14,17 +14,19 @@ def simulate_portfolio_paths(
     if daily_returns.empty:
         raise ValueError("Price history must contain enough rows to calculate returns.")
 
-    weights = np.repeat(1 / daily_returns.shape[1], daily_returns.shape[1])
-    mean_returns = daily_returns.mean().to_numpy()
-    std_returns = daily_returns.std().replace(0, 1e-9).to_numpy()
+    portfolio_returns = daily_returns.mean(axis=1)
+    lower_bound = float(portfolio_returns.quantile(0.05))
+    upper_bound = float(portfolio_returns.quantile(0.95))
+    stabilized_returns = portfolio_returns.clip(lower=lower_bound, upper=upper_bound).to_numpy()
+    if stabilized_returns.size == 0:
+        raise ValueError("Price history must contain enough rows to simulate portfolio paths.")
 
     rng = np.random.default_rng(random_seed)
-    simulated_asset_returns = rng.normal(
-        loc=mean_returns[:, None, None],
-        scale=std_returns[:, None, None],
-        size=(len(mean_returns), num_trading_days, num_simulations),
+    simulated_portfolio_returns = rng.choice(
+        stabilized_returns,
+        size=(num_trading_days, num_simulations),
+        replace=True,
     )
-    simulated_portfolio_returns = np.tensordot(weights, simulated_asset_returns, axes=(0, 0))
     cumulative_paths = np.vstack(
         [
             np.ones((1, num_simulations)),
@@ -42,5 +44,3 @@ def summarize_simulation(paths: pd.DataFrame) -> pd.Series:
     ci.index = ["95% CI Lower", "95% CI Upper"]
     combined = pd.concat([summary, ci], axis=0)
     return pd.Series(combined, dtype=float)
-
-

@@ -45,6 +45,14 @@ def dataframe_to_markdown(df: pd.DataFrame) -> str:
     return "\n".join(lines)
 
 
+def _metric_lookup(summary: pd.DataFrame) -> dict[str, float]:
+    return dict(zip(summary["metric"], summary["value"], strict=False))
+
+
+def _posix_path(value: str) -> str:
+    return value.replace("\\", "/")
+
+
 def plot_normalized_prices(price_history: pd.DataFrame, output_path: Path) -> None:
     normalized = price_history / price_history.iloc[0]
     ax = normalized.plot(figsize=(12, 6), linewidth=2)
@@ -81,6 +89,22 @@ def build_report_markdown(
     monte_carlo_summary: pd.Series,
     figures: dict[str, str],
 ) -> str:
+    portfolio_metrics = _metric_lookup(portfolio_summary)
+    portfolio_total_return = portfolio_metrics.get("Portfolio total return (lookback)", float("nan"))
+    benchmark_key = next(
+        (
+            key
+            for key in portfolio_metrics
+            if key.endswith("total return (lookback)") and key != "Portfolio total return (lookback)"
+        ),
+        None,
+    )
+    benchmark_total_return = portfolio_metrics.get(benchmark_key, float("nan")) if benchmark_key else float("nan")
+    relative_performance = portfolio_total_return - benchmark_total_return
+    expected_mc_return = monte_carlo_summary.get("mean", float("nan")) - 1
+    mc_lower = monte_carlo_summary.get("95% CI Lower", float("nan")) - 1
+    mc_upper = monte_carlo_summary.get("95% CI Upper", float("nan")) - 1
+
     report_table = top_selection[[
         "rank",
         "symbol",
@@ -93,6 +117,7 @@ def build_report_markdown(
         "return_63d",
         "market_cap",
         "avg_volume_3m",
+        "history_rows",
     ]].copy()
     report_table["trend_score"] = report_table["trend_score"].map(lambda value: format_number(value, 3))
     report_table["day_change_pct"] = report_table["day_change_pct"].map(format_percent_points)
@@ -101,6 +126,7 @@ def build_report_markdown(
     report_table["return_63d"] = report_table["return_63d"].map(format_percent)
     report_table["market_cap"] = report_table["market_cap"].map(format_billions)
     report_table["avg_volume_3m"] = report_table["avg_volume_3m"].map(format_millions)
+    report_table["history_rows"] = report_table["history_rows"].map(lambda value: format_number(value, 0))
     report_table.columns = [
         "Rank",
         "Ticker",
@@ -113,6 +139,7 @@ def build_report_markdown(
         "3M Return",
         "Market Cap",
         "Avg 3M Volume",
+        "History Rows",
     ]
 
     portfolio_table = portfolio_summary.copy()
@@ -124,6 +151,7 @@ def build_report_markdown(
 
     mc_table = monte_carlo_summary.reset_index()
     mc_table.columns = ["Metric", "Value"]
+
     def _format_mc_value(row: pd.Series) -> str:
         metric = row["Metric"]
         value = row["Value"]
@@ -149,10 +177,19 @@ This report identifies the **top 5 trending U.S. stocks** using a blended rankin
 - latest 1-day move
 - trailing 5-day, 1-month, and 3-month momentum
 - liquidity via average 3-month dollar volume
+- minimum-history preference for more decision-useful names
 
 Data source: `{selection_source}`  
 Universe size after filtering: **{candidate_count} stocks**  
 Latest market data used in the report: **{data_as_of}**
+
+### Key takeaways
+
+- Selected basket: **{', '.join(top_selection['symbol'].tolist())}**
+- Lookback portfolio return: **{format_percent(portfolio_total_return)}**
+- Relative performance vs benchmark: **{format_percent(relative_performance)}**
+- Monte Carlo expected terminal return: **{format_percent(expected_mc_return)}**
+- Monte Carlo 95% range: **{format_percent(mc_lower)} to {format_percent(mc_upper)}**
 
 ## Top 5 trending stocks
 
@@ -166,22 +203,22 @@ The selected names are combined into an equal-weight portfolio to estimate how t
 
 ## Monte Carlo outlook
 
-A 1-year Monte Carlo simulation is run on the equal-weight basket using recent daily return mean and volatility as inputs.
+A 1-year bootstrap Monte Carlo simulation is run on the equal-weight basket using stabilized empirical portfolio returns.
 
 {dataframe_to_markdown(mc_table)}
 
 ## Visual outputs
 
-- Normalized price chart: `{figures['normalized_prices']}`
-- Correlation heatmap: `{figures['correlation_heatmap']}`
+- Normalized price chart: `{_posix_path(figures['normalized_prices'])}`
+- Correlation heatmap: `{_posix_path(figures['correlation_heatmap'])}`
 
 ## Methodology notes
 
 1. Pull candidate names from Yahoo predefined screens: `most_actives`, `day_gainers`, and `growth_technology_stocks`.
 2. Filter for listed U.S. equities and require minimum price and market-cap thresholds.
-3. Download the latest daily adjusted-close history and compute momentum, volatility, and liquidity features.
+3. Download the latest daily adjusted-close history and prefer names with at least a 3-month lookback when available.
 4. Rank names using a weighted composite trend score and keep the top 5.
-5. Produce an equal-weight portfolio view and a Monte Carlo scenario range for decision support.
+5. Produce an equal-weight portfolio view and a scenario range for decision support.
 
 ## Disclaimer
 
@@ -192,23 +229,118 @@ This project is for analytics and educational use only and should not be interpr
 def build_data_quality_markdown(
     *,
     generated_at: datetime,
+    data_as_of: str,
     candidate_count: int,
+    eligible_count: int,
     selected_count: int,
     price_rows: int,
     missing_cells: int,
     selection_source: str,
+    min_history_days: int,
+    excluded_for_history: int,
+    selected_history: pd.DataFrame,
 ) -> str:
+    history_table = selected_history.copy()
+    if not history_table.empty:
+        history_table.columns = [
+            "Ticker",
+            "Observations",
+            "History Start",
+            "History End",
+            "Missing Cells",
+            "Meets Minimum History",
+        ]
+        history_table["Observations"] = history_table["Observations"].map(lambda value: format_number(value, 0))
+        history_table["Meets Minimum History"] = history_table["Meets Minimum History"].map(
+            lambda flag: "Yes" if flag else "Fallback"
+        )
+
     return f"""# Data Quality Report
 
 Generated: {generated_at.astimezone(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}
 
+- Latest market data used: **{data_as_of}**
 - Candidate universe count: **{candidate_count}**
+- Eligible securities with sufficient history: **{eligible_count}**
 - Selected top-n count: **{selected_count}**
 - Price-history row count: **{price_rows}**
 - Missing values in selected price matrix: **{missing_cells}**
 - Selection source: `{selection_source}`
+- Minimum history threshold for preferred selection: **{min_history_days} trading days**
+- Candidates excluded for insufficient history before fallback handling: **{excluded_for_history}**
 
 The pipeline rejects empty universes, removes non-equity results, and keeps only symbols with downloadable price history.
+
+## Selected ticker coverage
+
+{dataframe_to_markdown(history_table) if not history_table.empty else 'No selected ticker history was available.'}
 """
 
+
+README_AUTO_SECTION_START = "<!-- AUTO-GENERATED:START -->"
+README_AUTO_SECTION_END = "<!-- AUTO-GENERATED:END -->"
+
+
+def build_readme_latest_results_section(
+    *,
+    generated_at: datetime,
+    data_as_of: str,
+    selection_source: str,
+    top_selection: pd.DataFrame,
+    portfolio_summary: pd.DataFrame,
+    monte_carlo_summary: pd.Series,
+) -> str:
+    portfolio_metrics = _metric_lookup(portfolio_summary)
+    lookback_return = portfolio_metrics.get("Portfolio total return (lookback)", float("nan"))
+    sharpe_ratio = portfolio_metrics.get("Portfolio Sharpe ratio", float("nan"))
+    drawdown = portfolio_metrics.get("Portfolio max drawdown", float("nan"))
+    mc_expected = monte_carlo_summary.get("mean", float("nan")) - 1
+    mc_lower = monte_carlo_summary.get("95% CI Lower", float("nan")) - 1
+    mc_upper = monte_carlo_summary.get("95% CI Upper", float("nan")) - 1
+
+    readme_table = top_selection[["rank", "symbol", "name", "trend_score", "return_21d", "return_63d"]].copy()
+    readme_table.columns = ["Rank", "Ticker", "Company", "Trend Score", "1M Return", "3M Return"]
+    readme_table["Trend Score"] = readme_table["Trend Score"].map(lambda value: format_number(value, 3))
+    readme_table["1M Return"] = readme_table["1M Return"].map(format_percent)
+    readme_table["3M Return"] = readme_table["3M Return"].map(format_percent)
+
+    return f"""{README_AUTO_SECTION_START}
+## Latest generated result
+
+Most recent successful automated run:
+
+- **Generated:** {generated_at.astimezone(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}
+- **Latest market data used:** {data_as_of}
+- **Selection source:** `{selection_source}`
+- **Top 5 trending stocks:** `{', '.join(top_selection['symbol'].tolist())}`
+- **Lookback portfolio return:** {format_percent(lookback_return)}
+- **Portfolio Sharpe ratio:** {format_ratio(sharpe_ratio)}
+- **Portfolio max drawdown:** {format_percent(drawdown)}
+- **Monte Carlo expected terminal return:** {format_percent(mc_expected)}
+- **Monte Carlo 95% range:** {format_percent(mc_lower)} to {format_percent(mc_upper)}
+
+### Current top-5 snapshot
+
+{dataframe_to_markdown(readme_table)}
+
+See the generated deliverables:
+
+- `reports/latest_top5_stock_report.md`
+- `reports/data_quality_report.md`
+- `data/processed/latest_top5_selection.csv`
+- `data/processed/latest_portfolio_summary.csv`
+- `reports/figures/top5_normalized_performance.png`
+- `reports/figures/top5_correlation_heatmap.png`
+{README_AUTO_SECTION_END}"""
+
+
+def update_readme_with_latest_results(readme_path: Path, summary_section: str) -> None:
+    current = readme_path.read_text(encoding="utf-8")
+    if README_AUTO_SECTION_START not in current or README_AUTO_SECTION_END not in current:
+        raise ValueError("README.md is missing the auto-generated section markers.")
+
+    start_index = current.index(README_AUTO_SECTION_START)
+    end_index = current.index(README_AUTO_SECTION_END) + len(README_AUTO_SECTION_END)
+    refreshed = current[:start_index] + summary_section + current[end_index:]
+    readme_path.write_text(refreshed, encoding="utf-8")
 

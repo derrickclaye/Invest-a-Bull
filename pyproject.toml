@@ -4,30 +4,31 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "invest-a-bull"
-version = "0.3.0"
+version = "0.4.0"
 description = "Senior-style market analysis pipeline for trending U.S. stocks"
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [{ name = "Invest-a-Bull" }]
 dependencies = [
-    "bokeh>=3.9,<4",
-    "hvplot>=0.12,<0.13",
-    "matplotlib>=3.10,<4",
-    "numpy>=2.4,<3",
-    "pandas>=3.0,<3.1",
-    "panel>=1.8,<2",
-    "plotly>=6.7,<7",
-    "python-dotenv>=1.1,<2",
-    "requests>=2.33,<3",
-    "scipy>=1.17,<2",
+    "bokeh>=3.4,<4",
+    "hvplot>=0.10,<0.12",
+    "ipykernel>=6.29,<7",
+    "matplotlib>=3.8,<4",
+    "nbclient>=0.10,<1",
+    "nbformat>=5.10,<6",
+    "numpy>=1.26,<3",
+    "pandas>=2.2,<3",
+    "panel>=1.4,<2",
+    "plotly>=5.24,<7",
+    "python-dotenv>=1.0,<2",
+    "requests>=2.31,<3",
+    "scipy>=1.11,<2",
     "seaborn>=0.13,<0.14",
-    "websockets>=15,<16",
-    "yfinance>=1.2,<2",
+    "yfinance>=0.2.54,<1",
 ]
 
 [project.scripts]
-invest-a-bull-latest = "invest_a_bull.pipeline:main"
+invest-a-bull-latest = "invest_a_bull.automation:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
-

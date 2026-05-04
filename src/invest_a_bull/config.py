@@ -18,6 +18,7 @@ class AnalysisConfig:
     benchmark_ticker: str = "SPY"
     min_price: float = 5.0
     min_market_cap: int = 10_000_000_000
+    min_history_days: int = 63
     allowed_exchanges: tuple[str, ...] = ("NMS", "NYQ", "ASE", "NGM")
     fallback_universe: tuple[str, ...] = (
         "AAPL",
@@ -42,6 +43,7 @@ class AnalysisConfig:
     monte_carlo_simulations: int = 250
     monte_carlo_days: int = 252
     random_seed: int = 42
+    notebook_timeout_seconds: int = 1800
 
     @property
     def data_dir(self) -> Path:
@@ -54,4 +56,3 @@ class AnalysisConfig:
     @property
     def figures_dir(self) -> Path:
         return self.reports_dir / "figures"
-

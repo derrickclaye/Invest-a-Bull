@@ -1,0 +1,54 @@
+name: Daily Market Refresh
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '15 13 * * *'
+
+permissions:
+  contents: write
+
+jobs:
+  refresh-analysis:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip install -e .
+
+      - name: Refresh reports, README, and notebook
+        env:
+          MPLBACKEND: Agg
+        run: |
+          python run_latest_top5_analysis.py
+
+      - name: Run tests
+        run: |
+          python -m unittest discover -s tests -v
+
+      - name: Commit generated artifacts
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md MasterAnalysisFinal.ipynb data/processed reports
+          if git diff --cached --quiet; then
+            echo "No generated changes to commit."
+          else
+            git commit -m "chore: refresh daily market analysis"
+            git push
+          fi
+

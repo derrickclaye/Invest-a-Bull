@@ -5,6 +5,8 @@ from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
 
+import pandas as pd
+
 from .analytics import compute_security_metrics, correlation_matrix, portfolio_summary, rank_trending_stocks
 from .config import AnalysisConfig
 from .market_data import aggregate_candidates, download_adjusted_close, download_benchmark_close, fetch_screener_candidates
@@ -38,10 +40,42 @@ def run_pipeline(config: AnalysisConfig | None = None) -> dict[str, Path]:
 
     candidate_prices = download_adjusted_close(candidate_symbols, period=resolved_config.price_history_period)
     metrics = compute_security_metrics(candidate_universe, candidate_prices)
-    top_selection = rank_trending_stocks(metrics, top_n=resolved_config.top_n)
 
+    preferred_history_rows = resolved_config.min_history_days + 1
+    sufficient_history = metrics["history_rows"] >= preferred_history_rows
+    eligible_metrics = metrics.loc[sufficient_history].copy()
+    excluded_for_history = int((~sufficient_history).sum())
+
+    if len(eligible_metrics) < resolved_config.top_n:
+        supplemental = metrics.loc[~sufficient_history].sort_values(
+            ["history_rows", "screen_hits", "market_cap"],
+            ascending=[False, False, False],
+        ).head(resolved_config.top_n - len(eligible_metrics))
+        eligible_metrics = pd.concat([eligible_metrics, supplemental], ignore_index=True)
+
+    if eligible_metrics.empty:
+        raise ValueError("No eligible securities remained after applying history checks.")
+
+    top_selection = rank_trending_stocks(eligible_metrics, top_n=resolved_config.top_n)
     top_symbols = top_selection["symbol"].tolist()
     top_prices = candidate_prices[top_symbols].dropna(how="any")
+
+    selected_history = pd.DataFrame(
+        [
+            {
+                "symbol": ticker,
+                "observations": int(candidate_prices[ticker].dropna().shape[0]),
+                "history_start": candidate_prices[ticker].dropna().index.min().date().isoformat(),
+                "history_end": candidate_prices[ticker].dropna().index.max().date().isoformat(),
+                "missing_cells": int(candidate_prices[ticker].isna().sum()),
+                "meets_minimum_history": bool(
+                    top_selection.loc[top_selection["symbol"] == ticker, "history_rows"].iloc[0] >= preferred_history_rows
+                ),
+            }
+            for ticker in top_symbols
+        ]
+    )
+
     benchmark = download_benchmark_close(resolved_config.benchmark_ticker, period=resolved_config.price_history_period)
     benchmark.name = resolved_config.benchmark_ticker
 
@@ -79,6 +113,8 @@ def run_pipeline(config: AnalysisConfig | None = None) -> dict[str, Path]:
         "data_as_of": data_as_of,
         "selection_source": selection_source,
         "candidate_count": int(len(candidate_universe)),
+        "eligible_count": int(len(metrics.loc[sufficient_history])),
+        "excluded_for_history": excluded_for_history,
         "selected_tickers": top_symbols,
         "config": {key: str(value) if isinstance(value, Path) else value for key, value in asdict(resolved_config).items()},
     }
@@ -101,11 +137,16 @@ def run_pipeline(config: AnalysisConfig | None = None) -> dict[str, Path]:
 
     dq_report = build_data_quality_markdown(
         generated_at=generated_at,
+        data_as_of=data_as_of,
         candidate_count=len(candidate_universe),
+        eligible_count=int(len(metrics.loc[sufficient_history])),
         selected_count=len(top_symbols),
         price_rows=len(top_prices),
         missing_cells=int(top_prices.isna().sum().sum()),
         selection_source=selection_source,
+        min_history_days=resolved_config.min_history_days,
+        excluded_for_history=excluded_for_history,
+        selected_history=selected_history,
     )
     dq_report_path.write_text(dq_report, encoding="utf-8")
 
@@ -131,5 +172,4 @@ if __name__ == "__main__":
     if __package__ in {None, ""}:
         sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
     main()
-
 
