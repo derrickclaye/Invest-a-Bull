@@ -1,6 +1,7 @@
 name: Daily Market Refresh
 
 on:
+  push:
   workflow_dispatch:
   schedule:
     - cron: '15 13 * * *'
@@ -41,6 +42,7 @@ jobs:
           python -m unittest discover -s tests -v
 
       - name: Commit generated artifacts
+        if: github.event_name != 'push'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -48,7 +50,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "No generated changes to commit."
           else
-            git commit -m "chore: refresh daily market analysis"
+            git commit -m "chore: refresh daily market analysis [skip ci]"
             git push
           fi
 
