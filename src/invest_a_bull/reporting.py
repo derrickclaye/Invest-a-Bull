@@ -84,6 +84,7 @@ def build_report_markdown(
     data_as_of: str,
     selection_source: str,
     candidate_count: int,
+    screener_queries: tuple[str, ...],
     top_selection: pd.DataFrame,
     portfolio_summary: pd.DataFrame,
     monte_carlo_summary: pd.Series,
@@ -214,7 +215,7 @@ A 1-year bootstrap Monte Carlo simulation is run on the equal-weight basket usin
 
 ## Methodology notes
 
-1. Pull candidate names from Yahoo predefined screens: `most_actives`, `day_gainers`, and `growth_technology_stocks`.
+1. Pull candidate names from the configured Yahoo predefined screens: `{', '.join(screener_queries)}`.
 2. Filter for listed U.S. equities and require minimum price and market-cap thresholds.
 3. Download the latest daily adjusted-close history and prefer names with at least a 3-month lookback when available.
 4. Rank names using a weighted composite trend score and keep the top 5.
@@ -237,6 +238,7 @@ def build_data_quality_markdown(
     missing_cells: int,
     selection_source: str,
     min_history_days: int,
+    preferred_history_rows: int,
     excluded_for_history: int,
     selected_history: pd.DataFrame,
 ) -> str:
@@ -266,7 +268,7 @@ Generated: {generated_at.astimezone(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UT
 - Price-history row count: **{price_rows}**
 - Missing values in selected price matrix: **{missing_cells}**
 - Selection source: `{selection_source}`
-- Minimum history threshold for preferred selection: **{min_history_days} trading days**
+- Minimum price-history requirement for preferred selection: **{preferred_history_rows} rows** (`{min_history_days}` trailing trading days plus the starting observation)
 - Candidates excluded for insufficient history before fallback handling: **{excluded_for_history}**
 
 The pipeline rejects empty universes, removes non-equity results, and keeps only symbols with downloadable price history.

@@ -98,7 +98,12 @@ def equal_weight_portfolio_returns(price_history: pd.DataFrame) -> pd.Series:
 def portfolio_summary(price_history: pd.DataFrame, benchmark: pd.Series, risk_free_rate: float) -> pd.DataFrame:
     portfolio_returns = equal_weight_portfolio_returns(price_history)
     cumulative = (1 + portfolio_returns).cumprod()
-    annual_return = float(portfolio_returns.mean() * 252)
+    periods = len(portfolio_returns)
+    total_growth = float((1 + portfolio_returns).prod()) if periods else float("nan")
+    if periods and total_growth > 0:
+        annual_return = float(total_growth ** (252 / periods) - 1)
+    else:
+        annual_return = float("nan")
     annual_volatility = float(portfolio_returns.std() * np.sqrt(252))
     sharpe = float((annual_return - risk_free_rate) / annual_volatility) if annual_volatility else float("nan")
     total_return = float(cumulative.iloc[-1] - 1)

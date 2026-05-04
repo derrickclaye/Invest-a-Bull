@@ -1,6 +1,6 @@
 # Invest-a-Bull Senior Market Report
 
-Generated: 2026-05-04 05:36:00 UTC
+Generated: 2026-05-04 05:56:14 UTC
 
 ## Executive summary
 
@@ -41,9 +41,9 @@ The selected names are combined into an equal-weight portfolio to estimate how t
 | Metric | Value |
 | --- | --- |
 | Portfolio total return (lookback) | 135.19% |
-| Portfolio annualized return | 193.84% |
+| Portfolio annualized return | 476.72% |
 | Portfolio annualized volatility | 60.42% |
-| Portfolio Sharpe ratio | 3.14 |
+| Portfolio Sharpe ratio | 7.82 |
 | Portfolio max drawdown | -18.91% |
 | SPY total return (lookback) | 6.06% |
 
@@ -71,7 +71,7 @@ A 1-year bootstrap Monte Carlo simulation is run on the equal-weight basket usin
 
 ## Methodology notes
 
-1. Pull candidate names from Yahoo predefined screens: `most_actives`, `day_gainers`, and `growth_technology_stocks`.
+1. Pull candidate names from the configured Yahoo predefined screens: `most_actives, day_gainers, growth_technology_stocks`.
 2. Filter for listed U.S. equities and require minimum price and market-cap thresholds.
 3. Download the latest daily adjusted-close history and prefer names with at least a 3-month lookback when available.
 4. Rank names using a weighted composite trend score and keep the top 5.

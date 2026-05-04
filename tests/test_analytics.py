@@ -107,6 +107,25 @@ class AnalyticsTests(unittest.TestCase):
         benchmark_return = float(summary.loc[summary["metric"] == "SPY total return (lookback)", "value"].iloc[0])
         self.assertAlmostEqual(benchmark_return, 0.32)
 
+    def test_portfolio_summary_annualizes_realized_compounded_return(self) -> None:
+        price_history = pd.DataFrame(
+            {
+                "AAA": [100.0, 110.0, 121.0],
+                "BBB": [50.0, 55.0, 60.5],
+            },
+            index=pd.date_range("2025-01-01", periods=3, freq="B"),
+        )
+        benchmark = pd.Series(
+            [100.0, 101.0, 102.0],
+            index=price_history.index,
+            name="SPY",
+        )
+
+        summary = portfolio_summary(price_history, benchmark, risk_free_rate=0.0)
+        annualized_return = float(summary.loc[summary["metric"] == "Portfolio annualized return", "value"].iloc[0])
+        expected = float((1.21 ** (252 / 2)) - 1)
+        self.assertAlmostEqual(annualized_return, expected, delta=1e-3)
+
     def test_fetch_screener_candidates_reports_partial_failures(self) -> None:
         config = AnalysisConfig(
             screener_queries=("most_actives", "day_gainers"),

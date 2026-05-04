@@ -1,6 +1,6 @@
 # Data Quality Report
 
-Generated: 2026-05-04 05:36:00 UTC
+Generated: 2026-05-04 05:56:14 UTC
 
 - Latest market data used: **2026-05-01**
 - Candidate universe count: **40**
@@ -9,7 +9,7 @@ Generated: 2026-05-04 05:36:00 UTC
 - Price-history row count: **124**
 - Missing values in selected price matrix: **0**
 - Selection source: `yfinance_screeners`
-- Minimum history threshold for preferred selection: **63 trading days**
+- Minimum price-history requirement for preferred selection: **64 rows** (`63` trailing trading days plus the starting observation)
 - Candidates excluded for insufficient history before fallback handling: **2**
 
 The pipeline rejects empty universes, removes non-equity results, and keeps only symbols with downloadable price history.

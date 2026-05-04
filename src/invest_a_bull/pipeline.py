@@ -190,6 +190,7 @@ def run_pipeline(config: AnalysisConfig | None = None) -> dict[str, Path]:
         data_as_of=data_as_of,
         selection_source=selection_source,
         candidate_count=len(candidate_universe),
+        screener_queries=resolved_config.screener_queries,
         top_selection=top_selection,
         portfolio_summary=portfolio_table,
         monte_carlo_summary=simulation_summary,
@@ -210,6 +211,7 @@ def run_pipeline(config: AnalysisConfig | None = None) -> dict[str, Path]:
         missing_cells=int(top_prices.isna().sum().sum()),
         selection_source=selection_source,
         min_history_days=resolved_config.min_history_days,
+        preferred_history_rows=preferred_history_rows,
         excluded_for_history=excluded_for_history,
         selected_history=selected_history,
     )

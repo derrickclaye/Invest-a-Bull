@@ -18,25 +18,25 @@ The refreshed project combines:
 
 Most recent successful automated run:
 
-- **Generated:** 2026-05-04 05:36:00 UTC
+- **Generated:** 2026-05-04 05:56:14 UTC
 - **Latest market data used:** 2026-05-01
 - **Selection source:** `yfinance_screeners`
 - **Top 5 trending stocks:** `MU, AMD, AAOI, NVDA, INTC`
 - **Lookback portfolio return:** 135.19%
-- **Portfolio Sharpe ratio:** 3.14
+- **Portfolio Sharpe ratio:** 7.82
 - **Portfolio max drawdown:** -18.91%
 - **Monte Carlo expected terminal return:** 478.54%
 - **Monte Carlo 95% range:** 61.95% to 1277.09%
 
 ### Current top-5 snapshot
 
-| Rank | Ticker | Company                       | Trend Score | 1M Return | 3M Return |
-|------|--------|-------------------------------|-------------|-----------|-----------|
-| 1    | MU     | Micron Technology, Inc.       | 0.590       | 47.40%    | 30.75%    |
-| 2    | AMD    | Advanced Micro Devices, Inc.  | 0.569       | 71.51%    | 52.30%    |
-| 3    | AAOI   | Applied Optoelectronics, Inc. | 0.556       | 112.52%   | 320.80%   |
-| 4    | NVDA   | NVIDIA Corporation            | 0.519       | 12.92%    | 3.84%     |
-| 5    | INTC   | Intel Corporation             | 0.502       | 107.41%   | 114.37%   |
+| Rank | Ticker | Company | Trend Score | 1M Return | 3M Return |
+| --- | --- | --- | --- | --- | --- |
+| 1 | MU | Micron Technology, Inc. | 0.590 | 47.40% | 30.75% |
+| 2 | AMD | Advanced Micro Devices, Inc. | 0.569 | 71.51% | 52.30% |
+| 3 | AAOI | Applied Optoelectronics, Inc. | 0.556 | 112.52% | 320.80% |
+| 4 | NVDA | NVIDIA Corporation | 0.519 | 12.92% | 3.84% |
+| 5 | INTC | Intel Corporation | 0.502 | 107.41% | 114.37% |
 
 See the generated deliverables:
 
@@ -88,11 +88,6 @@ Optional editable installation:
 python -m pip install -e .
 ```
 
-If you use external API credentials locally, create your own untracked `DLC.env` from the checked-in example:
-
-```powershell
-Copy-Item .\DLC.env.example .\DLC.env
-```
 
 ## Run the latest analysis locally
 
