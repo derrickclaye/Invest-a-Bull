@@ -67,14 +67,14 @@ def _select_top_candidates_with_shared_history(
 
     ranked_metrics = rank_trending_stocks(metrics, top_n=len(metrics))
     full_pool_size = len(ranked_metrics)
+    max_search_pool_size = min(full_pool_size, max(top_n, MAX_SELECTION_SEARCH_POOL))
     search_pool_sizes = sorted(
         {
-            min(full_pool_size, pool_size)
+            min(max_search_pool_size, pool_size)
             for pool_size in (
                 top_n,
-                min(12, full_pool_size),
-                min(max(top_n, MAX_SELECTION_SEARCH_POOL), full_pool_size),
-                full_pool_size,
+                min(12, max_search_pool_size),
+                max_search_pool_size,
             )
         }
     )

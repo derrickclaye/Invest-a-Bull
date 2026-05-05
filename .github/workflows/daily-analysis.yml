@@ -66,16 +66,16 @@ jobs:
         run: |
           python run_latest_top5_analysis.py
 
-       - name: Guard against incomplete candidate universe
-         run: |
-           import json, sys
-           meta = json.loads(open("data/processed/latest_run_metadata.json").read())
-           src = meta.get("selection_source", "")
-           if src.startswith("fallback_momentum_universe") or src.startswith("yfinance_screeners_partial"):
-               print(f"::error::Incomplete candidate universe ({src}). Skipping commit to avoid publishing stale results.")
-               sys.exit(1)
-           print(f"Selection source OK: {src}")
-         shell: python
+      - name: Guard against incomplete candidate universe
+        run: |
+          import json, sys
+          meta = json.loads(open("data/processed/latest_run_metadata.json").read())
+          src = meta.get("selection_source", "")
+          if src.startswith("fallback_momentum_universe") or src.startswith("yfinance_screeners_partial"):
+              print(f"::error::Incomplete candidate universe ({src}). Skipping commit to avoid publishing stale results.")
+              sys.exit(1)
+          print(f"Selection source OK: {src}")
+        shell: python
 
       - name: Commit generated artifacts
         run: |
