@@ -48,19 +48,6 @@ def refresh_project_assets(
     monte_carlo_summary = pd.read_csv(outputs["monte_carlo_summary"], index_col=0).iloc[:, 0]
     generated_at = datetime.fromisoformat(metadata["generated_at_utc"])
 
-    if update_readme:
-        readme_path = resolved_config.project_root / "README.md"
-        summary_section = build_readme_latest_results_section(
-            generated_at=generated_at,
-            data_as_of=metadata["data_as_of"],
-            selection_source=metadata["selection_source"],
-            top_selection=top_selection,
-            portfolio_summary=portfolio_summary,
-            monte_carlo_summary=monte_carlo_summary,
-        )
-        update_readme_with_latest_results(readme_path, summary_section)
-        outputs["readme"] = readme_path
-
     if execute_master_notebook:
         notebook_path = resolved_config.project_root / "MasterAnalysisFinal.ipynb"
         previous_flag = os.environ.get("INVEST_A_BULL_NOTEBOOK_REFRESH")
@@ -77,6 +64,21 @@ def refresh_project_assets(
             else:
                 os.environ["INVEST_A_BULL_NOTEBOOK_REFRESH"] = previous_flag
         outputs["notebook"] = notebook_path
+
+    # Defer README update until all other steps have succeeded so that a
+    # notebook failure never leaves the repository partially refreshed.
+    if update_readme:
+        readme_path = resolved_config.project_root / "README.md"
+        summary_section = build_readme_latest_results_section(
+            generated_at=generated_at,
+            data_as_of=metadata["data_as_of"],
+            selection_source=metadata["selection_source"],
+            top_selection=top_selection,
+            portfolio_summary=portfolio_summary,
+            monte_carlo_summary=monte_carlo_summary,
+        )
+        update_readme_with_latest_results(readme_path, summary_section)
+        outputs["readme"] = readme_path
 
     return outputs
 
