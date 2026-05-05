@@ -1,12 +1,26 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+import os
+from dataclasses import dataclass, field
 from pathlib import Path
+
+
+def resolve_project_root() -> Path:
+    override = os.environ.get("INVEST_A_BULL_PROJECT_ROOT")
+    if override:
+        return Path(override).expanduser().resolve()
+
+    cwd = Path.cwd().resolve()
+    for candidate in (cwd, *cwd.parents):
+        if (candidate / "pyproject.toml").exists() and (candidate / "src" / "invest_a_bull").exists():
+            return candidate
+
+    return Path(__file__).resolve().parents[2]
 
 
 @dataclass(frozen=True)
 class AnalysisConfig:
-    project_root: Path = Path(__file__).resolve().parents[2]
+    project_root: Path = field(default_factory=resolve_project_root)
     top_n: int = 5
     screener_queries: tuple[str, ...] = (
         "most_actives",

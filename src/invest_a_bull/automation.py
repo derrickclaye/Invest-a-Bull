@@ -85,11 +85,19 @@ def refresh_project_assets(
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Refresh Invest-a-Bull reports, README, and notebook outputs.")
+    parser.add_argument(
+        "--project-root",
+        type=Path,
+        help="Path to the repository root that contains README.md and MasterAnalysisFinal.ipynb.",
+    )
     parser.add_argument("--skip-notebook", action="store_true", help="Skip executing MasterAnalysisFinal.ipynb.")
     parser.add_argument("--skip-readme", action="store_true", help="Skip updating the README latest-results section.")
     args = parser.parse_args()
 
+    config = AnalysisConfig(project_root=args.project_root.expanduser().resolve()) if args.project_root else None
+
     outputs = refresh_project_assets(
+        config=config,
         execute_master_notebook=not args.skip_notebook,
         update_readme=not args.skip_readme,
     )

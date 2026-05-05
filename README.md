@@ -103,6 +103,14 @@ If the project is installed in editable mode, you can also run:
 invest-a-bull-latest
 ```
 
+If you run the console script from outside the repository root, pass the root explicitly:
+
+```powershell
+invest-a-bull-latest --project-root C:\path\to\Invest-a-Bull
+```
+
+You can also set `INVEST_A_BULL_PROJECT_ROOT` once and run the command normally.
+
 Optional flags:
 
 ```powershell
