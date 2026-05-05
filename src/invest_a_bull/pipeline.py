@@ -138,11 +138,18 @@ def run_pipeline(config: AnalysisConfig | None = None) -> dict[str, Path]:
     if eligible_metrics.empty:
         raise ValueError("No eligible securities remained after applying history checks.")
 
+    effective_min_shared_rows = max(3, preferred_history_rows)
+    if len(metrics.loc[sufficient_history]) < resolved_config.top_n:
+        effective_min_shared_rows = max(
+            3,
+            min(preferred_history_rows, int(eligible_metrics["history_rows"].min())),
+        )
+
     top_selection, top_prices = _select_top_candidates_with_shared_history(
         eligible_metrics,
         candidate_prices,
         top_n=resolved_config.top_n,
-        min_shared_rows=max(3, preferred_history_rows),
+        min_shared_rows=effective_min_shared_rows,
     )
     top_symbols = cast(list[str], top_selection["symbol"].astype(str).tolist())
 
