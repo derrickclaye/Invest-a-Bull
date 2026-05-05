@@ -18,7 +18,7 @@ The refreshed project combines:
 
 Most recent successful automated run:
 
-- **Generated:** 2026-05-05 03:00:06 UTC
+- **Generated:** 2026-05-05 03:27:03 UTC
 - **Latest market data used:** 2026-05-04
 - **Selection source:** `yfinance_screeners`
 - **Top 5 trending stocks:** `MU, NBIS, CRCL, INTC, STX`
@@ -30,13 +30,13 @@ Most recent successful automated run:
 
 ### Current top-5 snapshot
 
-| Rank | Ticker | Company                         | Trend Score | 1M Return | 3M Return |
-|------|--------|---------------------------------|-------------|-----------|-----------|
-| 1    | MU     | Micron Technology, Inc.         | 0.668       | 57.40%    | 31.73%    |
-| 2    | NBIS   | Nebius Group N.V.               | 0.554       | 62.12%    | 100.11%   |
-| 3    | CRCL   | Circle Internet Group           | 0.538       | 32.43%    | 103.08%   |
-| 4    | INTC   | Intel Corporation               | 0.499       | 90.12%    | 96.23%    |
-| 5    | STX    | Seagate Technology Holdings plc | 0.474       | 72.01%    | 70.88%    |
+| Rank | Ticker | Company | Trend Score | 1M Return | 3M Return |
+| --- | --- | --- | --- | --- | --- |
+| 1 | MU | Micron Technology, Inc. | 0.668 | 57.40% | 31.73% |
+| 2 | NBIS | Nebius Group N.V. | 0.554 | 62.12% | 100.11% |
+| 3 | CRCL | Circle Internet Group | 0.538 | 32.43% | 103.08% |
+| 4 | INTC | Intel Corporation | 0.499 | 90.12% | 96.23% |
+| 5 | STX | Seagate Technology Holdings plc | 0.474 | 72.01% | 70.88% |
 
 See the generated deliverables:
 

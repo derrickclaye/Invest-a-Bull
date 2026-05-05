@@ -108,10 +108,10 @@ def aggregate_candidates(candidate_rows: pd.DataFrame) -> pd.DataFrame:
         name=("name", "first"),
         screen_hits=("screen", "count"),
         screens=("screen", lambda values: ", ".join(sorted(set(values)))),
-        price=("price", "max"),
-        day_change_pct=("day_change_pct", "max"),
-        market_cap=("market_cap", "max"),
-        avg_volume_3m=("avg_volume_3m", "max"),
+        price=("price", "first"),
+        day_change_pct=("day_change_pct", "first"),
+        market_cap=("market_cap", "first"),
+        avg_volume_3m=("avg_volume_3m", "first"),
     )
     max_hits = max(grouped["screen_hits"].max(), 1)
     grouped["screen_presence_score"] = grouped["screen_hits"] / max_hits
