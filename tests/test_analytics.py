@@ -188,11 +188,46 @@ class AnalyticsTests(unittest.TestCase):
             metrics,
             candidate_prices,
             top_n=3,
-            min_shared_rows=2,
+            min_shared_rows=5,
         )
 
         self.assertEqual(top_selection["symbol"].tolist(), ["AAA", "BBB", "CCC"])
-        self.assertGreaterEqual(len(top_prices), 2)
+        self.assertGreaterEqual(len(top_prices), 5)
+
+    def test_select_top_candidates_with_shared_history_raises_for_insufficient_overlap(self) -> None:
+        metrics = pd.DataFrame(
+            {
+                "symbol": ["AAA", "BBB", "CCC"],
+                "name": ["A", "B", "C"],
+                "screens": ["s1", "s1", "s1"],
+                "screen_hits": [2, 2, 2],
+                "day_change_pct": [0.03, 0.025, 0.02],
+                "return_5d": [0.04, 0.035, 0.03],
+                "return_21d": [0.08, 0.075, 0.07],
+                "return_63d": [0.12, 0.11, 0.10],
+                "avg_volume_3m": [5_000_000, 4_500_000, 4_000_000],
+                "latest_close": [100.0, 95.0, 90.0],
+                "market_cap": [500_000_000_000, 400_000_000_000, 300_000_000_000],
+                "dollar_volume": [500_000_000, 427_500_000, 360_000_000],
+                "history_rows": [6, 6, 6],
+            }
+        )
+        candidate_prices = pd.DataFrame(
+            {
+                "AAA": [100, 101, 102, 103],
+                "BBB": [90, 91, np.nan, np.nan],
+                "CCC": [80, 81, 82, 83],
+            },
+            index=pd.date_range("2025-01-01", periods=4, freq="B"),
+        )
+
+        with self.assertRaisesRegex(ValueError, "shared price rows"):
+            _select_top_candidates_with_shared_history(
+                metrics,
+                candidate_prices,
+                top_n=3,
+                min_shared_rows=3,
+            )
 
 
 if __name__ == "__main__":

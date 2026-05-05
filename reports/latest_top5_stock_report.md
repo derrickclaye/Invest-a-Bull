@@ -1,6 +1,6 @@
 # Invest-a-Bull Senior Market Report
 
-Generated: 2026-05-04 05:56:14 UTC
+Generated: 2026-05-05 02:44:53 UTC
 
 ## Executive summary
 
@@ -13,26 +13,26 @@ This report identifies the **top 5 trending U.S. stocks** using a blended rankin
 - minimum-history preference for more decision-useful names
 
 Data source: `yfinance_screeners`  
-Universe size after filtering: **40 stocks**  
-Latest market data used in the report: **2026-05-01**
+Universe size after filtering: **37 stocks**  
+Latest market data used in the report: **2026-05-04**
 
 ### Key takeaways
 
-- Selected basket: **MU, AMD, AAOI, NVDA, INTC**
-- Lookback portfolio return: **135.19%**
-- Relative performance vs benchmark: **129.13%**
-- Monte Carlo expected terminal return: **478.54%**
-- Monte Carlo 95% range: **61.95% to 1277.09%**
+- Selected basket: **MU, NBIS, CRCL, INTC, STX**
+- Lookback portfolio return: **110.13%**
+- Relative performance vs benchmark: **103.56%**
+- Monte Carlo expected terminal return: **433.11%**
+- Monte Carlo 95% range: **54.02% to 1342.17%**
 
 ## Top 5 trending stocks
 
 | Rank | Ticker | Company | Source Screens | Trend Score | 1D Move | 5D Return | 1M Return | 3M Return | Market Cap | Avg 3M Volume | History Rows |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | MU | Micron Technology, Inc. | growth_technology_stocks, most_actives | 0.590 | 4.84% | 9.16% | 47.40% | 30.75% | $611.5B | 41.1M | 124 |
-| 2 | AMD | Advanced Micro Devices, Inc. | growth_technology_stocks, most_actives | 0.569 | 1.71% | 3.66% | 71.51% | 52.30% | $587.8B | 37.5M | 124 |
-| 3 | AAOI | Applied Optoelectronics, Inc. | day_gainers | 0.556 | 11.56% | 13.16% | 112.52% | 320.80% | $14.7B | 10.9M | 124 |
-| 4 | NVDA | NVIDIA Corporation | growth_technology_stocks, most_actives | 0.519 | -0.56% | -4.72% | 12.92% | 3.84% | $4,823.3B | 174.2M | 124 |
-| 5 | INTC | Intel Corporation | most_actives | 0.502 | 5.42% | 20.69% | 107.41% | 114.37% | $500.6B | 104.7M | 124 |
+| 1 | MU | Micron Technology, Inc. | day_gainers, growth_technology_stocks, most_actives | 0.668 | 6.31% | 9.89% | 57.40% | 31.73% | $650.1B | 41.3M | 123 |
+| 2 | NBIS | Nebius Group N.V. | day_gainers | 0.554 | 14.20% | 21.70% | 62.12% | 100.11% | $44.8B | 16.4M | 123 |
+| 3 | CRCL | Circle Internet Group | day_gainers | 0.538 | 19.89% | 25.24% | 32.43% | 103.08% | $29.5B | 16.4M | 123 |
+| 4 | INTC | Intel Corporation | most_actives | 0.499 | -3.85% | 12.70% | 90.12% | 96.23% | $481.4B | 104.8M | 123 |
+| 5 | STX | Seagate Technology Holdings plc | growth_technology_stocks | 0.474 | 1.60% | 23.95% | 72.01% | 70.88% | $165.6B | 3.9M | 123 |
 
 ## Portfolio view
 
@@ -40,12 +40,12 @@ The selected names are combined into an equal-weight portfolio to estimate how t
 
 | Metric | Value |
 | --- | --- |
-| Portfolio total return (lookback) | 135.19% |
-| Portfolio annualized return | 476.72% |
-| Portfolio annualized volatility | 60.42% |
-| Portfolio Sharpe ratio | 7.82 |
-| Portfolio max drawdown | -18.91% |
-| SPY total return (lookback) | 6.06% |
+| Portfolio total return (lookback) | 110.13% |
+| Portfolio annualized return | 363.56% |
+| Portfolio annualized volatility | 59.03% |
+| Portfolio Sharpe ratio | 6.09 |
+| Portfolio max drawdown | -21.99% |
+| SPY total return (lookback) | 6.57% |
 
 ## Monte Carlo outlook
 
@@ -54,15 +54,15 @@ A 1-year bootstrap Monte Carlo simulation is run on the equal-weight basket usin
 | Metric | Value |
 | --- | --- |
 | count | 250 |
-| mean | 478.54% |
-| std | 373.41% |
-| min | 33.11% |
-| 25% | 246.75% |
-| 50% | 405.57% |
-| 75% | 602.95% |
-| max | 2857.73% |
-| 95% CI Lower | 61.95% |
-| 95% CI Upper | 1277.09% |
+| mean | 433.11% |
+| std | 319.25% |
+| min | 0.23% |
+| 25% | 210.97% |
+| 50% | 347.39% |
+| 75% | 591.37% |
+| max | 1720.53% |
+| 95% CI Lower | 54.02% |
+| 95% CI Upper | 1342.17% |
 
 ## Visual outputs
 

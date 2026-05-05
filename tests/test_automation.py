@@ -17,6 +17,7 @@ if str(SRC_DIR) not in sys.path:
 
 from invest_a_bull.automation import refresh_project_assets
 from invest_a_bull.config import AnalysisConfig
+from invest_a_bull.reporting import README_AUTO_SECTION_END, README_AUTO_SECTION_START
 
 
 class AutomationTests(unittest.TestCase):
@@ -86,21 +87,28 @@ class AutomationTests(unittest.TestCase):
     def test_refresh_project_assets_updates_readme_when_enabled(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
-            (root / "README.md").write_text("# Demo\n", encoding="utf-8")
+            readme_path = root / "README.md"
+            readme_path.write_text(
+                "# Demo\n\n"
+                f"{README_AUTO_SECTION_START}\nold section\n{README_AUTO_SECTION_END}\n\n"
+                "## Notes\n",
+                encoding="utf-8",
+            )
             outputs = self._write_pipeline_outputs(root)
             config = AnalysisConfig(project_root=root)
 
-            with (
-                patch("invest_a_bull.automation.run_pipeline", return_value=outputs),
-                patch("invest_a_bull.automation.build_readme_latest_results_section", return_value="section") as build_section,
-                patch("invest_a_bull.automation.update_readme_with_latest_results") as update_readme,
-            ):
+            with patch("invest_a_bull.automation.run_pipeline", return_value=outputs):
                 refreshed = refresh_project_assets(config=config, execute_master_notebook=False, update_readme=True)
 
             self.assertIn("readme", refreshed)
             self.assertNotIn("notebook", refreshed)
-            build_section.assert_called_once()
-            update_readme.assert_called_once_with(root / "README.md", "section")
+            refreshed_text = readme_path.read_text(encoding="utf-8")
+            self.assertIn(README_AUTO_SECTION_START, refreshed_text)
+            self.assertIn(README_AUTO_SECTION_END, refreshed_text)
+            self.assertNotIn("old section", refreshed_text)
+            self.assertIn("## Latest generated result", refreshed_text)
+            self.assertIn("`AAA, BBB, CCC, DDD, EEE`", refreshed_text)
+            self.assertIn("## Notes", refreshed_text)
 
     def test_refresh_project_assets_executes_notebook_when_enabled(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

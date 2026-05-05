@@ -18,25 +18,25 @@ The refreshed project combines:
 
 Most recent successful automated run:
 
-- **Generated:** 2026-05-04 05:56:14 UTC
-- **Latest market data used:** 2026-05-01
+- **Generated:** 2026-05-05 02:44:53 UTC
+- **Latest market data used:** 2026-05-04
 - **Selection source:** `yfinance_screeners`
-- **Top 5 trending stocks:** `MU, AMD, AAOI, NVDA, INTC`
-- **Lookback portfolio return:** 135.19%
-- **Portfolio Sharpe ratio:** 7.82
-- **Portfolio max drawdown:** -18.91%
-- **Monte Carlo expected terminal return:** 478.54%
-- **Monte Carlo 95% range:** 61.95% to 1277.09%
+- **Top 5 trending stocks:** `MU, NBIS, CRCL, INTC, STX`
+- **Lookback portfolio return:** 110.13%
+- **Portfolio Sharpe ratio:** 6.09
+- **Portfolio max drawdown:** -21.99%
+- **Monte Carlo expected terminal return:** 433.11%
+- **Monte Carlo 95% range:** 54.02% to 1342.17%
 
 ### Current top-5 snapshot
 
-| Rank | Ticker | Company | Trend Score | 1M Return | 3M Return |
-| --- | --- | --- | --- | --- | --- |
-| 1 | MU | Micron Technology, Inc. | 0.590 | 47.40% | 30.75% |
-| 2 | AMD | Advanced Micro Devices, Inc. | 0.569 | 71.51% | 52.30% |
-| 3 | AAOI | Applied Optoelectronics, Inc. | 0.556 | 112.52% | 320.80% |
-| 4 | NVDA | NVIDIA Corporation | 0.519 | 12.92% | 3.84% |
-| 5 | INTC | Intel Corporation | 0.502 | 107.41% | 114.37% |
+| Rank | Ticker | Company                         | Trend Score | 1M Return | 3M Return |
+|------|--------|---------------------------------|-------------|-----------|-----------|
+| 1    | MU     | Micron Technology, Inc.         | 0.668       | 57.40%    | 31.73%    |
+| 2    | NBIS   | Nebius Group N.V.               | 0.554       | 62.12%    | 100.11%   |
+| 3    | CRCL   | Circle Internet Group           | 0.538       | 32.43%    | 103.08%   |
+| 4    | INTC   | Intel Corporation               | 0.499       | 90.12%    | 96.23%    |
+| 5    | STX    | Seagate Technology Holdings plc | 0.474       | 72.01%    | 70.88%    |
 
 See the generated deliverables:
 

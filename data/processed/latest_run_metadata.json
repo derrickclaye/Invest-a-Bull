@@ -1,16 +1,16 @@
 {
-  "generated_at_utc": "2026-05-04T05:56:14.533901+00:00",
-  "data_as_of": "2026-05-01",
+  "generated_at_utc": "2026-05-05T02:44:53.231449+00:00",
+  "data_as_of": "2026-05-04",
   "selection_source": "yfinance_screeners",
-  "candidate_count": 40,
-  "eligible_count": 38,
-  "excluded_for_history": 2,
+  "candidate_count": 37,
+  "eligible_count": 37,
+  "excluded_for_history": 0,
   "selected_tickers": [
     "MU",
-    "AMD",
-    "AAOI",
-    "NVDA",
-    "INTC"
+    "NBIS",
+    "CRCL",
+    "INTC",
+    "STX"
   ],
   "config": {
     "project_root": ".",

@@ -5,6 +5,7 @@ from dataclasses import asdict
 from datetime import datetime, timezone
 from itertools import combinations
 from pathlib import Path
+from typing import cast
 
 import pandas as pd
 
@@ -21,6 +22,9 @@ from .reporting import (
 from .simulation import simulate_portfolio_paths, summarize_simulation
 
 
+MAX_SELECTION_SEARCH_POOL = 15
+
+
 def ensure_directories(config: AnalysisConfig) -> None:
     config.data_dir.mkdir(parents=True, exist_ok=True)
     config.reports_dir.mkdir(parents=True, exist_ok=True)
@@ -29,6 +33,26 @@ def ensure_directories(config: AnalysisConfig) -> None:
 
 def _shared_history(candidate_prices: pd.DataFrame, symbols: list[str]) -> pd.DataFrame:
     return candidate_prices[symbols].dropna(how="any")
+
+
+def _build_selected_history_row(
+    candidate_prices: pd.DataFrame,
+    top_selection: pd.DataFrame,
+    ticker: str,
+    preferred_history_rows: int,
+) -> dict[str, str | int | bool]:
+    price_series = candidate_prices.loc[:, ticker]
+    clean_series = price_series.dropna()
+    return {
+        "symbol": ticker,
+        "observations": int(clean_series.shape[0]),
+        "history_start": clean_series.index.min().date().isoformat(),
+        "history_end": clean_series.index.max().date().isoformat(),
+        "missing_cells": int(price_series.isna().sum()),
+        "meets_minimum_history": bool(
+            top_selection.loc[top_selection["symbol"] == ticker, "history_rows"].iloc[0] >= preferred_history_rows
+        ),
+    }
 
 
 def _select_top_candidates_with_shared_history(
@@ -42,7 +66,13 @@ def _select_top_candidates_with_shared_history(
         raise ValueError(f"At least {top_n} ranked candidates are required to build the top selection.")
 
     ranked_metrics = rank_trending_stocks(metrics, top_n=len(metrics))
-    search_pool_sizes = sorted({min(len(ranked_metrics), pool_size) for pool_size in (top_n, 12, 20, len(ranked_metrics))})
+    max_pool_size = min(len(ranked_metrics), max(top_n, MAX_SELECTION_SEARCH_POOL))
+    search_pool_sizes = sorted(
+        {
+            min(max_pool_size, pool_size)
+            for pool_size in (top_n, min(12, max_pool_size), max_pool_size)
+        }
+    )
 
     best_symbols: tuple[str, ...] | None = None
     best_shared_history: pd.DataFrame | None = None
@@ -85,7 +115,7 @@ def run_pipeline(config: AnalysisConfig | None = None) -> dict[str, Path]:
     generated_at = datetime.now(timezone.utc)
     candidate_rows, selection_source = fetch_screener_candidates(resolved_config)
     candidate_universe = aggregate_candidates(candidate_rows)
-    candidate_symbols = candidate_universe["symbol"].tolist()
+    candidate_symbols = tuple(str(symbol) for symbol in candidate_universe["symbol"].astype(str).tolist())
 
     if not candidate_symbols:
         raise ValueError("Candidate universe is empty after filtering.")
@@ -112,24 +142,12 @@ def run_pipeline(config: AnalysisConfig | None = None) -> dict[str, Path]:
         eligible_metrics,
         candidate_prices,
         top_n=resolved_config.top_n,
-        min_shared_rows=2,
+        min_shared_rows=max(3, preferred_history_rows),
     )
-    top_symbols = top_selection["symbol"].tolist()
+    top_symbols = cast(list[str], top_selection["symbol"].astype(str).tolist())
 
     selected_history = pd.DataFrame(
-        [
-            {
-                "symbol": ticker,
-                "observations": int(candidate_prices[ticker].dropna().shape[0]),
-                "history_start": candidate_prices[ticker].dropna().index.min().date().isoformat(),
-                "history_end": candidate_prices[ticker].dropna().index.max().date().isoformat(),
-                "missing_cells": int(candidate_prices[ticker].isna().sum()),
-                "meets_minimum_history": bool(
-                    top_selection.loc[top_selection["symbol"] == ticker, "history_rows"].iloc[0] >= preferred_history_rows
-                ),
-            }
-            for ticker in top_symbols
-        ]
+        [_build_selected_history_row(candidate_prices, top_selection, ticker, preferred_history_rows) for ticker in top_symbols]
     )
 
     benchmark = download_benchmark_close(resolved_config.benchmark_ticker, period=resolved_config.price_history_period)
