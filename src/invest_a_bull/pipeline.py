@@ -239,12 +239,22 @@ def run_pipeline(config: AnalysisConfig | None = None) -> dict[str, Path]:
     if eligible_metrics.empty:
         raise ValueError("No eligible securities remained after applying history checks.")
 
-    effective_min_shared_rows = max(3, preferred_history_rows)
-    if len(metrics.loc[sufficient_history]) < resolved_config.top_n:
-        effective_min_shared_rows = max(
-            3,
-            min(preferred_history_rows, int(eligible_metrics["history_rows"].min())),
-        )
+    # Probe the actual shared-history rows achievable for the top eligible candidates.
+    # Even when every symbol individually meets preferred_history_rows, staggered listing
+    # dates can make the group's common overlap shorter. Using the achievable shared window
+    # as the floor prevents false "no valid basket" errors in those cases.
+    top_eligible_symbols = cast(
+        list[str],
+        eligible_metrics.sort_values("history_rows", ascending=False)
+        .head(resolved_config.top_n)["symbol"]
+        .astype(str)
+        .tolist(),
+    )
+    if len(top_eligible_symbols) >= resolved_config.top_n:
+        achievable_shared_rows = len(candidate_prices[top_eligible_symbols].dropna(how="any"))
+    else:
+        achievable_shared_rows = int(eligible_metrics["history_rows"].min())
+    effective_min_shared_rows = max(3, min(preferred_history_rows, achievable_shared_rows))
 
     top_selection, top_prices = _select_top_candidates_with_shared_history(
         eligible_metrics,
