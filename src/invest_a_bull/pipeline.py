@@ -53,6 +53,81 @@ def _build_selected_history_row(
     }
 
 
+def _selection_score(selection: pd.DataFrame, shared_rows: int) -> tuple[int, float, int]:
+    return (
+        shared_rows,
+        float(selection["trend_score"].sum()),
+        -int(selection["rank"].sum()),
+    )
+
+
+def _ranked_selection(ranked_metrics: pd.DataFrame, symbols: tuple[str, ...]) -> pd.DataFrame:
+    return ranked_metrics[ranked_metrics["symbol"].isin(symbols)].copy()
+
+
+def _greedy_shared_history_selection(
+    ranked_metrics: pd.DataFrame,
+    candidate_prices: pd.DataFrame,
+    *,
+    top_n: int,
+    min_shared_rows: int,
+) -> tuple[pd.DataFrame, pd.DataFrame] | None:
+    symbol_order = cast(list[str], ranked_metrics["symbol"].astype(str).tolist())
+    best_symbols: tuple[str, ...] | None = None
+    best_shared_history: pd.DataFrame | None = None
+    best_score: tuple[int, float, int] | None = None
+
+    for seed in symbol_order:
+        chosen = [seed]
+        shared_history = _shared_history(candidate_prices, chosen)
+
+        while len(chosen) < top_n:
+            best_candidate: str | None = None
+            best_candidate_history: pd.DataFrame | None = None
+            best_candidate_score: tuple[int, float, int] | None = None
+
+            for candidate in symbol_order:
+                if candidate in chosen:
+                    continue
+
+                candidate_symbols = tuple(chosen + [candidate])
+                candidate_history = _shared_history(candidate_prices, list(candidate_symbols))
+                candidate_selection = _ranked_selection(ranked_metrics, candidate_symbols)
+                candidate_score = _selection_score(candidate_selection, len(candidate_history))
+                if best_candidate_score is None or candidate_score > best_candidate_score:
+                    best_candidate = candidate
+                    best_candidate_history = candidate_history
+                    best_candidate_score = candidate_score
+
+            if best_candidate is None or best_candidate_history is None:
+                break
+
+            chosen.append(best_candidate)
+            shared_history = best_candidate_history
+
+        if len(chosen) != top_n:
+            continue
+
+        if len(shared_history) < min_shared_rows:
+            continue
+
+        chosen_symbols = tuple(chosen)
+        candidate_selection = _ranked_selection(ranked_metrics, chosen_symbols)
+        score = _selection_score(candidate_selection, len(shared_history))
+        if best_score is None or score > best_score:
+            best_symbols = chosen_symbols
+            best_shared_history = shared_history
+            best_score = score
+
+    if best_symbols is None or best_shared_history is None:
+        return None
+
+    selected = ranked_metrics[ranked_metrics["symbol"].isin(best_symbols)].sort_values("rank").reset_index(drop=True)
+    selected = selected.copy()
+    selected["rank"] = range(1, len(selected) + 1)
+    return selected, best_shared_history
+
+
 def _select_top_candidates_with_shared_history(
     metrics: pd.DataFrame,
     candidate_prices: pd.DataFrame,
@@ -90,21 +165,44 @@ def _select_top_candidates_with_shared_history(
                 continue
 
             candidate_selection = pool[pool["symbol"].isin(symbol_group)].copy()
-            score = (
-                shared_rows,
-                float(candidate_selection["trend_score"].sum()),
-                -int(candidate_selection["rank"].sum()),
-            )
+            score = _selection_score(candidate_selection, shared_rows)
             if best_score is None or score > best_score:
                 best_symbols = symbol_group
                 best_shared_history = shared_history
                 best_score = score
+
+    if best_symbols is None and full_pool_size > max_search_pool_size and top_n > 1:
+        anchor_symbols = cast(list[str], ranked_metrics.head(max_search_pool_size)["symbol"].astype(str).tolist())
+        lower_ranked_symbols = cast(list[str], ranked_metrics["symbol"].astype(str).tolist()[max_search_pool_size:])
+        for symbol_group in combinations(anchor_symbols, top_n - 1):
+            for candidate in lower_ranked_symbols:
+                expanded_group = tuple((*symbol_group, candidate))
+                shared_history = _shared_history(candidate_prices, list(expanded_group))
+                shared_rows = len(shared_history)
+                if shared_rows < min_shared_rows:
+                    continue
+
+                candidate_selection = _ranked_selection(ranked_metrics, expanded_group)
+                score = _selection_score(candidate_selection, shared_rows)
+                if best_score is None or score > best_score:
+                    best_symbols = expanded_group
+                    best_shared_history = shared_history
+                    best_score = score
 
     if best_symbols is not None and best_shared_history is not None:
         selected = ranked_metrics[ranked_metrics["symbol"].isin(best_symbols)].sort_values("rank").reset_index(drop=True)
         selected = selected.copy()
         selected["rank"] = range(1, len(selected) + 1)
         return selected, best_shared_history
+
+    greedy_selection = _greedy_shared_history_selection(
+        ranked_metrics,
+        candidate_prices,
+        top_n=top_n,
+        min_shared_rows=min_shared_rows,
+    )
+    if greedy_selection is not None:
+        return greedy_selection
 
     raise ValueError(
         f"Unable to identify {top_n} tickers with at least {min_shared_rows} shared price rows for portfolio analytics."

@@ -16,10 +16,49 @@ if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
 from invest_a_bull.config import AnalysisConfig
-from invest_a_bull.pipeline import run_pipeline
+from invest_a_bull.pipeline import _select_top_candidates_with_shared_history, run_pipeline
 
 
 class PipelineTests(unittest.TestCase):
+    def test_select_top_candidates_can_use_lower_ranked_symbol_outside_capped_pool(self) -> None:
+        symbols = [f"S{i:02d}" for i in range(1, 17)]
+        metrics = pd.DataFrame(
+            {
+                "symbol": symbols,
+                "name": symbols,
+                "screens": ["s1"] * len(symbols),
+                "screen_hits": list(range(len(symbols), 0, -1)),
+                "day_change_pct": np.linspace(1.6, 0.1, len(symbols)),
+                "return_5d": np.linspace(0.30, 0.05, len(symbols)),
+                "return_21d": np.linspace(0.45, 0.10, len(symbols)),
+                "return_63d": np.linspace(0.60, 0.15, len(symbols)),
+                "avg_volume_3m": np.linspace(5_000_000, 500_000, len(symbols)),
+                "latest_close": np.linspace(100.0, 85.0, len(symbols)),
+                "market_cap": np.linspace(500_000_000_000, 20_000_000_000, len(symbols)),
+                "dollar_volume": np.linspace(500_000_000, 20_000_000, len(symbols)),
+                "history_rows": [5, 5, *([2] * 13), 5],
+            }
+        )
+        candidate_prices = pd.DataFrame(
+            {
+                "S01": [100.0, 101.0, 102.0, 103.0, 104.0],
+                "S02": [90.0, 91.0, 92.0, 93.0, 94.0],
+                **{symbol: [np.nan, np.nan, np.nan, 10.0, 10.5] for symbol in symbols[2:15]},
+                "S16": [80.0, 80.5, 81.0, 81.5, 82.0],
+            },
+            index=pd.date_range("2025-01-01", periods=5, freq="B"),
+        )
+
+        top_selection, top_prices = _select_top_candidates_with_shared_history(
+            metrics,
+            candidate_prices,
+            top_n=3,
+            min_shared_rows=3,
+        )
+
+        self.assertEqual(top_selection["symbol"].tolist(), ["S01", "S02", "S16"])
+        self.assertEqual(len(top_prices), 5)
+
     def test_run_pipeline_falls_back_to_best_available_shared_history_window(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
