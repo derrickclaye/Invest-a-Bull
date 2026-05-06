@@ -83,6 +83,7 @@ class ReportingTests(unittest.TestCase):
             data_as_of="2026-05-04",
             selection_source="unit_test_source",
             candidate_count=50,
+            min_history_days=21,
             screener_queries=("most_actives", "day_gainers"),
             top_selection=top_selection,
             portfolio_summary=portfolio_summary,
@@ -96,6 +97,7 @@ class ReportingTests(unittest.TestCase):
         self.assertIn("top 3 trending U.S. stocks", report)
         self.assertIn("## Top 3 trending stocks", report)
         self.assertIn("keep the top 3.", report)
+        self.assertIn("at least 21 trading days of lookback", report)
 
 
 if __name__ == "__main__":

@@ -228,7 +228,8 @@ class PipelineTests(unittest.TestCase):
             self.assertTrue(outputs["top_selection"].name.endswith("latest_top3_selection.csv"))
             self.assertTrue(outputs["top_prices"].name.endswith("latest_top3_prices.csv"))
             self.assertTrue(outputs["report"].name.endswith("latest_top3_stock_report.md"))
-            self.assertEqual(dq_report.count("Fallback"), 3)
+            self.assertEqual(dq_report.count("Fallback"), 1)
+            self.assertEqual(dq_report.count("Yes"), 2)
 
 
 if __name__ == "__main__":

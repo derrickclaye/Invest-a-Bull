@@ -39,17 +39,17 @@ def _build_selected_history_row(
     candidate_prices: pd.DataFrame,
     ticker: str,
     preferred_history_rows: int,
-    shared_history_rows: int,
 ) -> dict[str, str | int | bool]:
     price_series = candidate_prices.loc[:, ticker]
     clean_series = price_series.dropna()
+    observation_count = int(clean_series.shape[0])
     return {
         "symbol": ticker,
-        "observations": int(clean_series.shape[0]),
+        "observations": observation_count,
         "history_start": clean_series.index.min().date().isoformat(),
         "history_end": clean_series.index.max().date().isoformat(),
         "missing_cells": int(price_series.isna().sum()),
-        "meets_minimum_history": bool(shared_history_rows >= preferred_history_rows),
+        "meets_minimum_history": bool(observation_count >= preferred_history_rows),
     }
 
 
@@ -264,14 +264,12 @@ def run_pipeline(config: AnalysisConfig | None = None) -> dict[str, Path]:
     )
     top_symbols = cast(list[str], top_selection["symbol"].astype(str).tolist())
 
-    shared_history_rows = len(top_prices)
     selected_history = pd.DataFrame(
         [
             _build_selected_history_row(
                 candidate_prices,
                 ticker,
                 preferred_history_rows,
-                shared_history_rows,
             )
             for ticker in top_symbols
         ]
@@ -336,6 +334,7 @@ def run_pipeline(config: AnalysisConfig | None = None) -> dict[str, Path]:
         data_as_of=data_as_of,
         selection_source=selection_source,
         candidate_count=len(candidate_universe),
+        min_history_days=resolved_config.min_history_days,
         screener_queries=resolved_config.screener_queries,
         top_selection=top_selection,
         portfolio_summary=portfolio_table,

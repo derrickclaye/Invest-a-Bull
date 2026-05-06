@@ -84,6 +84,7 @@ def build_report_markdown(
     data_as_of: str,
     selection_source: str,
     candidate_count: int,
+    min_history_days: int,
     screener_queries: tuple[str, ...],
     top_selection: pd.DataFrame,
     portfolio_summary: pd.DataFrame,
@@ -218,7 +219,7 @@ A 1-year bootstrap Monte Carlo simulation is run on the equal-weight basket usin
 
 1. Pull candidate names from the configured Yahoo predefined screens: `{', '.join(screener_queries)}`.
 2. Filter for listed U.S. equities and require minimum price and market-cap thresholds.
-3. Download the latest daily adjusted-close history and prefer names with at least a 3-month lookback when available.
+3. Download the latest daily adjusted-close history and prefer names with at least {min_history_days} trading days of lookback when available.
 4. Rank names using a weighted composite trend score and keep the top {selected_count}.
 5. Produce an equal-weight portfolio view and a scenario range for decision support.
 

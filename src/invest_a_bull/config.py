@@ -15,7 +15,14 @@ def resolve_project_root() -> Path:
         if (candidate / "pyproject.toml").exists() and (candidate / "src" / "invest_a_bull").exists():
             return candidate
 
-    return Path(__file__).resolve().parents[2]
+    package_candidate = Path(__file__).resolve().parents[2]
+    if (package_candidate / "pyproject.toml").exists() and (package_candidate / "src" / "invest_a_bull").exists():
+        return package_candidate
+
+    raise RuntimeError(
+        "Could not determine the project root from the current working directory or package location. "
+        "Run the command from a project checkout or set INVEST_A_BULL_PROJECT_ROOT."
+    )
 
 
 @dataclass(frozen=True)
