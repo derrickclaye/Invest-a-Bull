@@ -1,10 +1,6 @@
 # Import libraries and dependencies
 import numpy as np
 import pandas as pd
-import os
-import alpaca_trade_api as tradeapi
-import datetime as dt
-import pytz
 
 class MCSimulation:
     """
@@ -48,12 +44,24 @@ class MCSimulation:
         if not isinstance(portfolio_data, pd.DataFrame):
             raise TypeError("portfolio_data must be a Pandas DataFrame")
             
-        # Set weights if empty, otherwise make sure sum of weights equals one.
-        if weights == "":
-            num_stocks = len(portfolio_data.columns.get_level_values(0).unique())
-            weights = [1.0/num_stocks for s in range(0,num_stocks)]
+        # Set weights if empty, otherwise make sure they match the portfolio columns and sum to one.
+        num_stocks = len(portfolio_data.columns.get_level_values(0).unique())
+        empty_weights = (
+            weights is None
+            or (isinstance(weights, str) and weights == "")
+            or (not isinstance(weights, str) and hasattr(weights, "__len__") and len(weights) == 0)
+        )
+        if empty_weights:
+            weights = np.repeat(1.0 / num_stocks, num_stocks)
         else:
-            if round(sum(weights),2) < .99:
+            try:
+                weights = np.asarray(weights, dtype=float).flatten()
+            except (TypeError, ValueError) as exc:
+                raise TypeError("weights must be an array-like of numeric values.") from exc
+
+            if len(weights) != num_stocks:
+                raise AttributeError("Number of portfolio weights must match the number of assets.")
+            if not np.isclose(float(weights.sum()), 1.0):
                 raise AttributeError("Sum of portfolio weights must equal one.")
         
         # Calculate daily return if not within dataframe
@@ -62,11 +70,11 @@ class MCSimulation:
             tickers = portfolio_data.columns.get_level_values(0).unique()
             column_names = [(x,"daily_return") for x in tickers]
             close_df.columns = pd.MultiIndex.from_tuples(column_names)
-            portfolio_data = portfolio_data.merge(close_df,left_index=True,right_index=True).reindex(columns=tickers,level=0)    
-        
+            portfolio_data = portfolio_data.merge(close_df,left_index=True,right_index=True).reindex(columns=tickers,level=0)
+
         # Set class attributes
         self.portfolio_data = portfolio_data
-        self.weights = weights
+        self.weights = np.array(weights, dtype=float)
         self.nSim = num_simulation
         self.nTrading = num_trading_days
         self.simulated_return = ""
@@ -109,7 +117,8 @@ class MCSimulation:
             sim_df = pd.DataFrame(simvals).T.pct_change()
     
             # Use the `dot` function with the weights to multiply weights with each column's simulated daily returns
-            sim_df = sim_df.dot(self.weights)
+            weight_vector = pd.Series(self.weights, index=sim_df.columns)
+            sim_df = sim_df.dot(weight_vector)
     
             # Calculate the normalized, cumulative return series
             portfolio_cumulative_returns[n] = (1 + sim_df.fillna(0)).cumprod()
@@ -163,6 +172,6 @@ class MCSimulation:
             self.calc_cumulative_return()
             
         metrics = self.simulated_return.iloc[-1].describe()
-        ci_series = self.confidence_interval
+        ci_series = self.confidence_interval.copy()
         ci_series.index = ["95% CI Lower","95% CI Upper"]
-        return metrics.append(ci_series)
+        return pd.concat([metrics, ci_series])

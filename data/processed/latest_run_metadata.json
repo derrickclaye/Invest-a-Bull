@@ -1,0 +1,60 @@
+{
+  "generated_at_utc": "2026-05-05T03:27:03.516493+00:00",
+  "data_as_of": "2026-05-04",
+  "selection_source": "yfinance_screeners",
+  "candidate_count": 37,
+  "eligible_count": 37,
+  "excluded_for_history": 0,
+  "selected_tickers": [
+    "MU",
+    "NBIS",
+    "CRCL",
+    "INTC",
+    "STX"
+  ],
+  "config": {
+    "project_root": ".",
+    "top_n": 5,
+    "screener_queries": [
+      "most_actives",
+      "day_gainers",
+      "growth_technology_stocks"
+    ],
+    "screener_count": 25,
+    "price_history_period": "6mo",
+    "benchmark_ticker": "SPY",
+    "min_price": 5.0,
+    "min_market_cap": 10000000000,
+    "min_history_days": 63,
+    "allowed_exchanges": [
+      "NMS",
+      "NYQ",
+      "ASE",
+      "NGM"
+    ],
+    "fallback_universe": [
+      "AAPL",
+      "AMD",
+      "AMZN",
+      "AVGO",
+      "CRM",
+      "GOOGL",
+      "HOOD",
+      "INTC",
+      "JPM",
+      "META",
+      "MSFT",
+      "NFLX",
+      "NVDA",
+      "ORCL",
+      "PLTR",
+      "SHOP",
+      "TSLA"
+    ],
+    "risk_free_rate": 0.04,
+    "monte_carlo_simulations": 250,
+    "monte_carlo_days": 252,
+    "random_seed": 42,
+    "notebook_timeout_seconds": 1800
+  }
+}
