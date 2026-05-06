@@ -95,11 +95,16 @@ class PipelineTests(unittest.TestCase):
             top_selection = pd.read_csv(outputs["top_selection"])
             top_prices = pd.read_csv(outputs["top_prices"], index_col=0, parse_dates=True)
             metadata = json.loads(outputs["metadata"].read_text(encoding="utf-8"))
+            dq_report = outputs["data_quality_report"].read_text(encoding="utf-8")
 
             self.assertCountEqual(top_selection["symbol"].tolist(), ["AAA", "BBB", "CCC"])
             self.assertEqual(len(top_prices), 4)
             self.assertEqual(metadata["eligible_count"], 2)
             self.assertCountEqual(metadata["selected_tickers"], ["AAA", "BBB", "CCC"])
+            self.assertTrue(outputs["top_selection"].name.endswith("latest_top3_selection.csv"))
+            self.assertTrue(outputs["top_prices"].name.endswith("latest_top3_prices.csv"))
+            self.assertTrue(outputs["report"].name.endswith("latest_top3_stock_report.md"))
+            self.assertEqual(dq_report.count("Fallback"), 3)
 
 
 if __name__ == "__main__":

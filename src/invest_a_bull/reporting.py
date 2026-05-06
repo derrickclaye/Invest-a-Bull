@@ -56,7 +56,7 @@ def _posix_path(value: str) -> str:
 def plot_normalized_prices(price_history: pd.DataFrame, output_path: Path) -> None:
     normalized = price_history / price_history.iloc[0]
     ax = normalized.plot(figsize=(12, 6), linewidth=2)
-    ax.set_title("Top 5 Trending Stocks - Normalized Price Performance")
+    ax.set_title(f"Top {price_history.shape[1]} Trending Stocks - Normalized Price Performance")
     ax.set_ylabel("Growth of $1")
     ax.set_xlabel("Date")
     ax.grid(alpha=0.2)
@@ -68,7 +68,7 @@ def plot_normalized_prices(price_history: pd.DataFrame, output_path: Path) -> No
 def plot_correlation_heatmap(correlation: pd.DataFrame, output_path: Path) -> None:
     fig, ax = plt.subplots(figsize=(8, 6))
     sns.heatmap(correlation, annot=True, cmap="RdYlGn", center=0, fmt=".2f", ax=ax)
-    ax.set_title("Top 5 Trending Stocks - Return Correlation")
+    ax.set_title(f"Top {correlation.shape[0]} Trending Stocks - Return Correlation")
     fig.tight_layout()
     fig.savefig(output_path, dpi=180)
     plt.close(fig)
@@ -90,6 +90,7 @@ def build_report_markdown(
     monte_carlo_summary: pd.Series,
     figures: dict[str, str],
 ) -> str:
+    selected_count = len(top_selection)
     portfolio_metrics = _metric_lookup(portfolio_summary)
     portfolio_total_return = portfolio_metrics.get("Portfolio total return (lookback)", float("nan"))
     benchmark_key = next(
@@ -172,7 +173,7 @@ Generated: {generated_at.astimezone(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UT
 
 ## Executive summary
 
-This report identifies the **top 5 trending U.S. stocks** using a blended ranking model that combines:
+This report identifies the **top {selected_count} trending U.S. stocks** using a blended ranking model that combines:
 
 - current Yahoo Finance screener presence
 - latest 1-day move
@@ -192,7 +193,7 @@ Latest market data used in the report: **{data_as_of}**
 - Monte Carlo expected terminal return: **{format_percent(expected_mc_return)}**
 - Monte Carlo 95% range: **{format_percent(mc_lower)} to {format_percent(mc_upper)}**
 
-## Top 5 trending stocks
+## Top {selected_count} trending stocks
 
 {dataframe_to_markdown(report_table)}
 
@@ -218,7 +219,7 @@ A 1-year bootstrap Monte Carlo simulation is run on the equal-weight basket usin
 1. Pull candidate names from the configured Yahoo predefined screens: `{', '.join(screener_queries)}`.
 2. Filter for listed U.S. equities and require minimum price and market-cap thresholds.
 3. Download the latest daily adjusted-close history and prefer names with at least a 3-month lookback when available.
-4. Rank names using a weighted composite trend score and keep the top 5.
+4. Rank names using a weighted composite trend score and keep the top {selected_count}.
 5. Produce an equal-weight portfolio view and a scenario range for decision support.
 
 ## Disclaimer
@@ -292,6 +293,8 @@ def build_readme_latest_results_section(
     portfolio_summary: pd.DataFrame,
     monte_carlo_summary: pd.Series,
 ) -> str:
+    selected_count = len(top_selection)
+    selection_label = f"top{selected_count}"
     portfolio_metrics = _metric_lookup(portfolio_summary)
     lookback_return = portfolio_metrics.get("Portfolio total return (lookback)", float("nan"))
     sharpe_ratio = portfolio_metrics.get("Portfolio Sharpe ratio", float("nan"))
@@ -314,25 +317,25 @@ Most recent successful automated run:
 - **Generated:** {generated_at.astimezone(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}
 - **Latest market data used:** {data_as_of}
 - **Selection source:** `{selection_source}`
-- **Top 5 trending stocks:** `{', '.join(top_selection['symbol'].tolist())}`
+- **Top {selected_count} trending stocks:** `{', '.join(top_selection['symbol'].tolist())}`
 - **Lookback portfolio return:** {format_percent(lookback_return)}
 - **Portfolio Sharpe ratio:** {format_ratio(sharpe_ratio)}
 - **Portfolio max drawdown:** {format_percent(drawdown)}
 - **Monte Carlo expected terminal return:** {format_percent(mc_expected)}
 - **Monte Carlo 95% range:** {format_percent(mc_lower)} to {format_percent(mc_upper)}
 
-### Current top-5 snapshot
+### Current top-{selected_count} snapshot
 
 {dataframe_to_markdown(readme_table)}
 
 See the generated deliverables:
 
-- `reports/latest_top5_stock_report.md`
+- `reports/latest_{selection_label}_stock_report.md`
 - `reports/data_quality_report.md`
-- `data/processed/latest_top5_selection.csv`
+- `data/processed/latest_{selection_label}_selection.csv`
 - `data/processed/latest_portfolio_summary.csv`
-- `reports/figures/top5_normalized_performance.png`
-- `reports/figures/top5_correlation_heatmap.png`
+- `reports/figures/{selection_label}_normalized_performance.png`
+- `reports/figures/{selection_label}_correlation_heatmap.png`
 {README_AUTO_SECTION_END}"""
 
 

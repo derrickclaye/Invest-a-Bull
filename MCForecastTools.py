@@ -46,12 +46,22 @@ class MCSimulation:
             
         # Set weights if empty, otherwise make sure they match the portfolio columns and sum to one.
         num_stocks = len(portfolio_data.columns.get_level_values(0).unique())
-        if weights == "":
-            weights = [1.0 / num_stocks for s in range(0, num_stocks)]
+        empty_weights = (
+            weights is None
+            or (isinstance(weights, str) and weights == "")
+            or (not isinstance(weights, str) and hasattr(weights, "__len__") and len(weights) == 0)
+        )
+        if empty_weights:
+            weights = np.repeat(1.0 / num_stocks, num_stocks)
         else:
+            try:
+                weights = np.asarray(weights, dtype=float).flatten()
+            except (TypeError, ValueError) as exc:
+                raise TypeError("weights must be an array-like of numeric values.") from exc
+
             if len(weights) != num_stocks:
                 raise AttributeError("Number of portfolio weights must match the number of assets.")
-            if not np.isclose(sum(weights), 1.0):
+            if not np.isclose(float(weights.sum()), 1.0):
                 raise AttributeError("Sum of portfolio weights must equal one.")
         
         # Calculate daily return if not within dataframe

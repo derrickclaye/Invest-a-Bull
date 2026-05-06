@@ -37,9 +37,9 @@ def _shared_history(candidate_prices: pd.DataFrame, symbols: list[str]) -> pd.Da
 
 def _build_selected_history_row(
     candidate_prices: pd.DataFrame,
-    top_selection: pd.DataFrame,
     ticker: str,
     preferred_history_rows: int,
+    shared_history_rows: int,
 ) -> dict[str, str | int | bool]:
     price_series = candidate_prices.loc[:, ticker]
     clean_series = price_series.dropna()
@@ -49,9 +49,7 @@ def _build_selected_history_row(
         "history_start": clean_series.index.min().date().isoformat(),
         "history_end": clean_series.index.max().date().isoformat(),
         "missing_cells": int(price_series.isna().sum()),
-        "meets_minimum_history": bool(
-            top_selection.loc[top_selection["symbol"] == ticker, "history_rows"].iloc[0] >= preferred_history_rows
-        ),
+        "meets_minimum_history": bool(shared_history_rows >= preferred_history_rows),
     }
 
 
@@ -158,8 +156,17 @@ def run_pipeline(config: AnalysisConfig | None = None) -> dict[str, Path]:
     )
     top_symbols = cast(list[str], top_selection["symbol"].astype(str).tolist())
 
+    shared_history_rows = len(top_prices)
     selected_history = pd.DataFrame(
-        [_build_selected_history_row(candidate_prices, top_selection, ticker, preferred_history_rows) for ticker in top_symbols]
+        [
+            _build_selected_history_row(
+                candidate_prices,
+                ticker,
+                preferred_history_rows,
+                shared_history_rows,
+            )
+            for ticker in top_symbols
+        ]
     )
 
     benchmark = download_benchmark_close(resolved_config.benchmark_ticker, period=resolved_config.price_history_period)
@@ -176,17 +183,18 @@ def run_pipeline(config: AnalysisConfig | None = None) -> dict[str, Path]:
     simulation_summary = summarize_simulation(simulation_paths)
     data_as_of = str(top_prices.index.max().date())
 
-    normalized_plot = resolved_config.figures_dir / "top5_normalized_performance.png"
-    correlation_plot = resolved_config.figures_dir / "top5_correlation_heatmap.png"
+    selection_label = f"top{resolved_config.top_n}"
+    normalized_plot = resolved_config.figures_dir / f"{selection_label}_normalized_performance.png"
+    correlation_plot = resolved_config.figures_dir / f"{selection_label}_correlation_heatmap.png"
     plot_normalized_prices(top_prices, normalized_plot)
     plot_correlation_heatmap(correlation, correlation_plot)
 
-    top_selection_path = resolved_config.data_dir / "latest_top5_selection.csv"
-    top_prices_path = resolved_config.data_dir / "latest_top5_prices.csv"
+    top_selection_path = resolved_config.data_dir / f"latest_{selection_label}_selection.csv"
+    top_prices_path = resolved_config.data_dir / f"latest_{selection_label}_prices.csv"
     portfolio_path = resolved_config.data_dir / "latest_portfolio_summary.csv"
     simulation_path = resolved_config.data_dir / "latest_monte_carlo_summary.csv"
     metadata_path = resolved_config.data_dir / "latest_run_metadata.json"
-    report_path = resolved_config.reports_dir / "latest_top5_stock_report.md"
+    report_path = resolved_config.reports_dir / f"latest_{selection_label}_stock_report.md"
     dq_report_path = resolved_config.reports_dir / "data_quality_report.md"
 
     top_selection.to_csv(top_selection_path, index=False)
